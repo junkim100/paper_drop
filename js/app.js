@@ -347,6 +347,51 @@
     return diffMs > days * 24 * 60 * 60 * 1000;
   }
 
+  // --- Check file existence ---
+  async function fileExists(url) {
+    try {
+      const r = await fetch(url, { method: "HEAD" });
+      return r.ok;
+    } catch {
+      return false;
+    }
+  }
+
+  // --- Add keep/delete action to header ---
+  function addKeepAction(header, entry, keepId, expired, kept, hasFiles) {
+    // No files = nothing to keep/delete
+    if (!hasFiles) return;
+
+    const container = document.createElement("div");
+    container.className = "keep-toggle";
+
+    if (expired && kept) {
+      container.innerHTML = `
+        <button class="delete-btn" data-keep-id="${keepId}" aria-label="Delete">
+          <span>🗑️</span>
+          <span>Delete</span>
+        </button>
+      `;
+      container.querySelector(".delete-btn").addEventListener("click", () => {
+        toggleKeep(keepId, false);
+        entry.remove();
+      });
+    } else if (!expired) {
+      container.innerHTML = `
+        <input type="checkbox" class="keep-checkbox" id="keep-${keepId}" ${kept ? "checked" : ""}>
+        <label class="keep-label" for="keep-${keepId}">
+          <span class="keep-star">⭐</span>
+          <span>Keep</span>
+        </label>
+      `;
+      container.querySelector(".keep-checkbox").addEventListener("change", (e) => {
+        toggleKeep(keepId, e.target.checked);
+      });
+    }
+
+    header.appendChild(container);
+  }
+
   // --- Render Paper Entry ---
   function renderPaperEntry(paper, dropType, date) {
     const keepId = `${dropType}-${date}-${paper.number}`;
@@ -360,80 +405,33 @@
     const header = document.createElement("div");
     header.className = "paper-header";
 
-    let actionHtml;
-    if (expired && kept) {
-      // Kept but past 10 days: show delete button only
-      actionHtml = `
-        <div class="keep-toggle">
-          <button class="delete-btn" data-keep-id="${keepId}" aria-label="Delete">
-            <span>🗑️</span>
-            <span>Delete</span>
-          </button>
-        </div>
-      `;
-    } else if (!expired) {
-      // Within 10 days: show keep checkbox
-      actionHtml = `
-        <div class="keep-toggle">
-          <input type="checkbox" class="keep-checkbox" id="keep-${keepId}" ${kept ? "checked" : ""}>
-          <label class="keep-label" for="keep-${keepId}">
-            <span class="keep-star">⭐</span>
-            <span>Keep</span>
-          </label>
-        </div>
-      `;
-    } else {
-      // Expired and not kept: no action (shouldn't normally appear, but just in case)
-      actionHtml = "";
-    }
-
     header.innerHTML = `
       <span class="paper-number">#${paper.number}</span>
       <div class="paper-info">
         <div class="paper-title">${escapeHtml(paper.title)}</div>
         ${paper.headline ? `<div class="paper-headline">${escapeHtml(paper.headline)}</div>` : ""}
       </div>
-      ${actionHtml}
     `;
-
-    const checkbox = header.querySelector(".keep-checkbox");
-    if (checkbox) {
-      checkbox.addEventListener("change", () => {
-        toggleKeep(keepId, checkbox.checked);
-      });
-    }
-
-    const deleteBtn = header.querySelector(".delete-btn");
-    if (deleteBtn) {
-      deleteBtn.addEventListener("click", () => {
-        toggleKeep(keepId, false);
-        // Remove the entire day card if no more kept items in it
-        entry.remove();
-      });
-    }
 
     entry.appendChild(header);
 
-    // Only show audio player if the file actually exists
-    if (paper.audio) {
-      const audioUrl = BASE_PATH + paper.audio;
-      fetch(audioUrl, { method: "HEAD" }).then((r) => {
-        if (r.ok) {
-          entry.appendChild(createAudioPlayer(paper, dropType, date));
-        }
-      }).catch(() => {});
-    }
+    // Check file existence, then render audio/script/keep controls
+    const audioUrl = paper.audio ? BASE_PATH + paper.audio : null;
+    const scriptUrl = paper.script ? BASE_PATH + paper.script : null;
 
-    // Only show script dropdown if the file actually exists
-    if (paper.script) {
-      const scriptUrl = BASE_PATH + paper.script;
-      fetch(scriptUrl, { method: "HEAD" }).then((r) => {
-        if (r.ok) {
-          // Insert after audio player if it exists, otherwise after header
-          entry.appendChild(createScriptDropdown(paper));
-        }
-      }).catch(() => {});
-    }
+    Promise.all([
+      audioUrl ? fileExists(audioUrl) : Promise.resolve(false),
+      scriptUrl ? fileExists(scriptUrl) : Promise.resolve(false),
+    ]).then(([hasAudio, hasScript]) => {
+      if (hasAudio) {
+        entry.appendChild(createAudioPlayer(paper, dropType, date));
+      }
+      if (hasScript) {
+        entry.appendChild(createScriptDropdown(paper));
+      }
+      // Only show keep/delete if there are actual files to protect
+      addKeepAction(header, entry, keepId, expired, kept, hasAudio || hasScript);
+    });
 
     return entry;
   }
