@@ -472,11 +472,28 @@ a:hover {
 }
 
 .day-intro {
-  background: var(--bg-card);
-  border: 1px solid var(--border-primary);
+  background: var(--accent-subtle);
+  border: 1px solid rgba(108,180,255,0.2);
+  border-left: 3px solid var(--accent);
   border-radius: var(--radius-lg);
   padding: 20px 24px;
   margin-bottom: 16px;
+}
+.day-intro h3 {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  margin: 0 0 10px;
+}
+.day-intro ul {
+  margin: 0;
+  padding-left: 18px;
+}
+.day-intro li {
+  margin-bottom: 6px;
+  line-height: 1.6;
 }
 
 .day-footer {
