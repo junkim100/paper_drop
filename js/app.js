@@ -474,6 +474,7 @@
   function renderDaySection(drop, dropType) {
     const section = document.createElement("div");
     section.className = "day-section";
+    section.dataset.date = drop.date;
 
     // Day header
     const header = document.createElement("div");
@@ -568,6 +569,10 @@
       drops.forEach((drop) => {
         listEl.appendChild(renderDaySection(drop, type));
       });
+
+      // Build timeline sidebar
+      buildTimeline(drops, type);
+      updateTimelineActive();
     } catch (err) {
       listEl.innerHTML = `
         <div class="empty-state">
@@ -611,6 +616,69 @@
     });
   }
 
+  // --- Timeline Sidebar ---
+  function buildTimeline(drops, type) {
+    const bar = document.getElementById("timeline-bar");
+    // Clear existing dots for this type
+    bar.querySelectorAll(`.timeline-dot[data-type="${type}"]`).forEach(d => d.remove());
+
+    drops.sort((a, b) => b.date.localeCompare(a.date));
+
+    drops.forEach((drop) => {
+      const dot = document.createElement("button");
+      dot.className = "timeline-dot";
+      dot.dataset.type = type;
+      dot.dataset.date = drop.date;
+
+      const d = new Date(drop.date + "T00:00:00");
+      const month = d.toLocaleDateString("en-US", { month: "short" });
+      const day = d.getDate();
+
+      dot.innerHTML = `<span class="timeline-dot-circle"></span><span class="timeline-dot-label">${month} ${day}</span>`;
+      dot.title = `${formatDate(drop.date)} — ${drop.papers.length} papers`;
+
+      dot.addEventListener("click", () => {
+        const section = document.querySelector(`.day-section[data-date="${drop.date}"]`);
+        if (section) {
+          section.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
+
+      bar.appendChild(dot);
+    });
+  }
+
+  function updateTimelineActive() {
+    const sections = document.querySelectorAll(".tab-panel.active .day-section");
+    const dots = document.querySelectorAll(".timeline-dot");
+    const activeType = document.querySelector(".tab-btn.active")?.dataset.tab;
+
+    // Show only dots for active tab
+    dots.forEach(d => {
+      d.style.display = d.dataset.type === activeType ? "" : "none";
+    });
+
+    if (!sections.length) return;
+
+    // Find which section is most visible
+    let closest = null;
+    let closestDist = Infinity;
+    const viewMid = window.innerHeight / 3;
+
+    sections.forEach(s => {
+      const rect = s.getBoundingClientRect();
+      const dist = Math.abs(rect.top - viewMid);
+      if (dist < closestDist) {
+        closestDist = dist;
+        closest = s.dataset.date;
+      }
+    });
+
+    dots.forEach(d => {
+      d.classList.toggle("active", d.dataset.date === closest);
+    });
+  }
+
   // --- Init ---
   function init() {
     initTheme();
@@ -618,6 +686,12 @@
     initKeyboard();
     loadDrops("paper-drop");
     loadDrops("eval-drop");
+
+    // Update timeline on scroll and tab switch
+    window.addEventListener("scroll", updateTimelineActive, { passive: true });
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => setTimeout(updateTimelineActive, 100));
+    });
   }
 
   if (document.readyState === "loading") {
