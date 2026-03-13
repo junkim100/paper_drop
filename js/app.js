@@ -397,11 +397,8 @@
     const keepId = `${dropType}-${date}-${paper.number}`;
     const kept = isKept(keepId);
     const expired = isOlderThanDays(date, 10);
-    const readKey = `paper_drop_read_${keepId}`;
-    const isRead = localStorage.getItem(readKey) === "1";
-
     const card = document.createElement("div");
-    card.className = "paper-card" + (kept ? " kept" : "") + (isRead ? " read" : "");
+    card.className = "paper-card" + (kept ? " kept" : "");
     card.dataset.keepId = keepId;
 
     // Header with number badge, vibe fires, title (clickable if link), and actions
@@ -439,13 +436,7 @@
       body.innerHTML = renderMarkdown(paper.markdown);
       card.appendChild(body);
 
-      // Mark as read when clicking the body
-      body.addEventListener("click", () => {
-        if (!isRead) {
-          localStorage.setItem(readKey, "1");
-          card.classList.add("read");
-        }
-      });
+
     }
 
     // Media section (audio + script) - only if files exist
@@ -484,15 +475,10 @@
     // Day header
     const header = document.createElement("div");
     header.className = "day-header";
-    const readCount = drop.papers.filter(p => {
-      const readKey = `paper_drop_read_${dropType}-${drop.date}-${p.number}`;
-      return localStorage.getItem(readKey) === "1";
-    }).length;
     header.innerHTML = `
       <span class="day-date">${formatDate(drop.date)}</span>
       <span class="day-stats">
         <span class="day-paper-count">${drop.papers.length} paper${drop.papers.length !== 1 ? "s" : ""}</span>
-        ${readCount > 0 ? `<span class="day-read-count">✓ ${readCount} read</span>` : ""}
       </span>
     `;
     section.appendChild(header);

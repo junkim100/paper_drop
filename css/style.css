@@ -574,6 +574,13 @@ hr,
 .paper-card-body h2 {
   display: none;
 }
+.day-intro h1, .day-intro h2, .day-intro h3,
+.day-footer h1, .day-footer h2, .day-footer h3 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 8px;
+}
 
 /* --- Paper Card --- */
 .paper-card {
@@ -592,12 +599,7 @@ hr,
   border-left: 3px solid var(--kept-border);
   background: var(--kept-bg);
 }
-.paper-card.read {
-  opacity: 0.75;
-}
-.paper-card.read:hover {
-  opacity: 1;
-}
+
 .paper-card.focused {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent-subtle), var(--shadow-md);
