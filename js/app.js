@@ -339,10 +339,19 @@
     return container;
   }
 
+  // --- Age Check ---
+  function isOlderThanDays(dateStr, days) {
+    const entryDate = new Date(dateStr + "T00:00:00");
+    const now = new Date();
+    const diffMs = now - entryDate;
+    return diffMs > days * 24 * 60 * 60 * 1000;
+  }
+
   // --- Render Paper Entry ---
   function renderPaperEntry(paper, dropType, date) {
     const keepId = `${dropType}-${date}-${paper.number}`;
     const kept = isKept(keepId);
+    const expired = isOlderThanDays(date, 10);
 
     const entry = document.createElement("div");
     entry.className = "paper-entry" + (kept ? " kept" : "");
@@ -351,25 +360,57 @@
     const header = document.createElement("div");
     header.className = "paper-header";
 
+    let actionHtml;
+    if (expired && kept) {
+      // Kept but past 10 days: show delete button only
+      actionHtml = `
+        <div class="keep-toggle">
+          <button class="delete-btn" data-keep-id="${keepId}" aria-label="Delete">
+            <span>🗑️</span>
+            <span>Delete</span>
+          </button>
+        </div>
+      `;
+    } else if (!expired) {
+      // Within 10 days: show keep checkbox
+      actionHtml = `
+        <div class="keep-toggle">
+          <input type="checkbox" class="keep-checkbox" id="keep-${keepId}" ${kept ? "checked" : ""}>
+          <label class="keep-label" for="keep-${keepId}">
+            <span class="keep-star">⭐</span>
+            <span>Keep</span>
+          </label>
+        </div>
+      `;
+    } else {
+      // Expired and not kept: no action (shouldn't normally appear, but just in case)
+      actionHtml = "";
+    }
+
     header.innerHTML = `
       <span class="paper-number">#${paper.number}</span>
       <div class="paper-info">
         <div class="paper-title">${escapeHtml(paper.title)}</div>
         ${paper.headline ? `<div class="paper-headline">${escapeHtml(paper.headline)}</div>` : ""}
       </div>
-      <div class="keep-toggle">
-        <input type="checkbox" class="keep-checkbox" id="keep-${keepId}" ${kept ? "checked" : ""}>
-        <label class="keep-label" for="keep-${keepId}">
-          <span class="keep-star">⭐</span>
-          <span>Keep</span>
-        </label>
-      </div>
+      ${actionHtml}
     `;
 
     const checkbox = header.querySelector(".keep-checkbox");
-    checkbox.addEventListener("change", () => {
-      toggleKeep(keepId, checkbox.checked);
-    });
+    if (checkbox) {
+      checkbox.addEventListener("change", () => {
+        toggleKeep(keepId, checkbox.checked);
+      });
+    }
+
+    const deleteBtn = header.querySelector(".delete-btn");
+    if (deleteBtn) {
+      deleteBtn.addEventListener("click", () => {
+        toggleKeep(keepId, false);
+        // Remove the entire day card if no more kept items in it
+        entry.remove();
+      });
+    }
 
     entry.appendChild(header);
 

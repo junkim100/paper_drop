@@ -497,6 +497,25 @@ a:hover {
   opacity: 0.4;
 }
 
+.delete-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 60, 60, 0.15);
+  border: 1px solid rgba(255, 60, 60, 0.3);
+  color: #ff6b6b;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: var(--transition);
+}
+
+.delete-btn:hover {
+  background: rgba(255, 60, 60, 0.3);
+  border-color: rgba(255, 60, 60, 0.5);
+}
+
 /* --- Audio Player --- */
 .audio-player {
   background: var(--player-bg);
