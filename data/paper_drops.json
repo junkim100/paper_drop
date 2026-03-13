@@ -1,8 +1,54 @@
 [
   {
+    "date": "2026-03-12",
+    "intro": "### TL;DR (read this if nothing else)\n- **Reasoning doesn't just help LLMs think, it helps them *remember*.** CoT acts as a computational scratch pad that unlocks facts the model already knows but can't access in one shot. But hallucinated intermediate facts poison the final answer.\n- **Changing the font on a math problem screenshot can swing MLLM accuracy by 47 percentage points.** The \"modality gap\" when text becomes pixels is way more fragile than anyone thought. A dead-simple self-distillation fix takes GSM8K from 30% to 92%.\n- **Mamba-2 no longer needs NVIDIA.** A pure JAX implementation runs on CPU, GPU, and TPU from a single source file with zero custom kernels, hitting 140 TFLOPS on TPU v6e.",
+    "footer": "## 🌡️ Field Pulse\n\nThe theme this week is **fragility under the hood**. Models know more than they can access (Thinking to Recall), break in stupid ways when you change the font (modality gap), and are locked to hardware they don't need to be (Mamba-2). The most impactful work right now isn't making models bigger. It's figuring out why the ones we have fail in ways that shouldn't happen, and fixing those gaps with surprisingly simple techniques. Self-distillation and \"just let the compiler handle it\" are both themes worth watching.",
+    "papers": [
+      {
+        "number": 1,
+        "title": "Your Model Already Knows the Answer, It Just Can't Reach It",
+        "headline": "",
+        "link": "https://arxiv.org/abs/2603.09906",
+        "vibe": 4,
+        "vibe_label": "Really solid, bookmark for the weekend. Directly relevant if you work on eval or reasoning",
+        "venue": "arXiv 2026",
+        "water_cooler": "Did you see that paper showing CoT isn't actually reasoning on factual questions? The model is basically talking to itself to remember things, like when you mutter 'keys, wallet, phone' before leaving the house.",
+        "markdown": "**One-liner:** Turns out chain-of-thought on simple factual questions isn't about \"reasoning\" at all. It's about giving the model extra tokens to jog its own memory.\n\n**The problem:** CoT obviously helps with multi-step math. But why does it also help on single-hop trivia questions where there's literally nothing to \"reason\" about? That's weird.\n\n**The trick:** They found two mechanisms. First, a \"computational buffer\" where the model uses reasoning tokens as extra compute cycles, regardless of what those tokens actually say. Second, \"factual priming\" where generating related facts during reasoning acts like a semantic bridge to the correct answer. Think of it like word association: saying \"Paris\" out loud helps you remember \"Eiffel Tower\" even if nobody asked.\n\n**Numbers:** Reasoning substantially expands the recall boundary of parametric knowledge. Models retrieve correct answers that are \"effectively unreachable\" without CoT.\n\n**The catch:** The priming mechanism is a double-edged sword. If the model hallucinates intermediate facts during reasoning, it *increases* hallucination in the final answer. Your reasoning chain is only as good as its weakest link.",
+        "audio": "audio/paper-2026-03-12-1.mp3",
+        "script": "scripts/paper-2026-03-12-1.txt"
+      },
+      {
+        "number": 2,
+        "title": "Change the Font, Break the Model",
+        "headline": "",
+        "link": "https://arxiv.org/abs/2603.09095",
+        "vibe": 4,
+        "vibe_label": "Really solid, bookmark for the weekend. If you do anything with document understanding or multimodal eval, this is required reading",
+        "venue": "arXiv 2026",
+        "water_cooler": "Did you see that paper where switching from Arial to Times New Roman drops a vision model's math accuracy by 47 points? We've been benchmarking vibes, not capability.",
+        "markdown": "**One-liner:** MLLMs reading text-as-images are way more fragile than you think, and the fix is embarrassingly simple.\n\n**The problem:** Multimodal LLMs can read text in images, but they're measurably worse at it compared to getting the same text as tokens. Everyone knew this. Nobody knew *why* or how bad the confounds were.\n\n**The trick:** They tested 7 MLLMs across 7 benchmarks in 5 input modes. The shocking finding: just changing the *font* on rendered text swings accuracy by up to 47 percentage points. Math tasks drop 60+ points when rendered as images. Error analysis on 4,000 examples shows image mode specifically amplifies reading/calculation errors while leaving knowledge errors unchanged. Some models even suffer \"chain-of-thought collapse\" when looking at images. The fix? Self-distillation: train the model on its own text-mode reasoning traces paired with image inputs.\n\n**Numbers:** GSM8K accuracy goes from 30.71% to 92.72% with self-distillation. Transfers to unseen benchmarks without catastrophic forgetting.\n\n**The catch:** They only tested self-distillation on one model/benchmark pair in depth. The 47pp font sensitivity is wild but might vary a lot across model families.",
+        "audio": "audio/paper-2026-03-12-2.mp3",
+        "script": "scripts/paper-2026-03-12-2.txt"
+      },
+      {
+        "number": 3,
+        "title": "Mamba Breaks Up with NVIDIA",
+        "headline": "",
+        "link": "https://arxiv.org/abs/2603.09555",
+        "vibe": 3,
+        "vibe_label": "Interesting if you're in this subfield. Important for the SSM ecosystem's future, less exciting if you're all-in on Transformers",
+        "venue": "arXiv 2026",
+        "water_cooler": "Did you see someone got Mamba-2 running on TPUs with zero custom kernels? Just pure JAX. The compiler-first approach might be how we finally break the CUDA moat for alternative architectures.",
+        "markdown": "**One-liner:** Mamba-2 now runs on anything with an XLA backend. No CUDA kernels. No Triton. Just JAX.\n\n**The problem:** Every SSM release ships glued to fused CUDA/Triton kernels, which means NVIDIA or bust. This is a practical barrier for anyone wanting to run these models on TPUs or non-NVIDIA hardware.\n\n**The trick:** They realized Mamba-2's structure (diagonal states, chunkable recurrence, einsum-heavy compute, static control flow) maps perfectly onto what XLA's compiler already optimizes. So instead of writing custom kernels, they just... wrote standard JAX and let the compiler do its thing. The O(1) state cache for autoregressive decoding is handled entirely on-device with no host synchronization.\n\n**Numbers:** On TPU v6e across 130M to 2.7B parameter models: ~140 TFLOPS on prefill (15% MFU), up to 64% bandwidth utilization on decode. Greedy decoding matches the PyTorch/CUDA reference token-for-token within float32 tolerance.\n\n**The catch:** 15% MFU on prefill is not going to blow anyone's mind. Hand-tuned kernels will still win on raw throughput for NVIDIA hardware. This is a portability play, not a speed play.",
+        "audio": "audio/paper-2026-03-12-3.mp3",
+        "script": "scripts/paper-2026-03-12-3.txt"
+      }
+    ]
+  },
+  {
     "date": "2026-03-13",
-    "intro": "### TL;DR (read this if nothing else)\n- **95-99% of your gradient signal is getting crushed** by the LM head before it reaches most of your model's parameters. This might be the biggest training inefficiency nobody talks about.\n- A new RL trick fuses a pretrained value model with tiny rollout batches, beating GRPO/DAPO by 10%+ on math while using group size *4*. Your GPU bill just got smaller.\n- Instead of teaching embeddings what text *means*, teach them what the LLM would *say* about it. New MTEB SOTA, no labels needed, and it even reduces toxic retrieval by 43%.\n\n---",
-    "footer": "## 🌡️ Field Pulse\nThe gradient bottleneck paper feels like one of those \"how did nobody formalize this before\" moments. If it holds up, expect a wave of papers on alternative LM head architectures in the next few months. Meanwhile, RL efficiency is the hottest arms race right now. Between V₀.₅ and ICRL, the message is clear: brute-force rollouts are out, clever priors and curriculum tricks are in. The embedding space is also quietly getting interesting again with generative approaches challenging the contrastive learning orthodoxy.\n---",
+    "intro": "### TL;DR (read this if nothing else)\n- **95-99% of your gradient signal is getting crushed** by the LM head before it reaches most of your model's parameters. This might be the biggest training inefficiency nobody talks about.\n- A new RL trick fuses a pretrained value model with tiny rollout batches, beating GRPO/DAPO by 10%+ on math while using group size *4*. Your GPU bill just got smaller.\n- Instead of teaching embeddings what text *means*, teach them what the LLM would *say* about it. New MTEB SOTA, no labels needed, and it even reduces toxic retrieval by 43%.",
+    "footer": "## 🌡️ Field Pulse\nThe gradient bottleneck paper feels like one of those \"how did nobody formalize this before\" moments. If it holds up, expect a wave of papers on alternative LM head architectures in the next few months. Meanwhile, RL efficiency is the hottest arms race right now. Between V₀.₅ and ICRL, the message is clear: brute-force rollouts are out, clever priors and curriculum tricks are in. The embedding space is also quietly getting interesting again with generative approaches challenging the contrastive learning orthodoxy.",
     "papers": [
       {
         "number": 1,

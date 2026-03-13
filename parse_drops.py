@@ -70,10 +70,21 @@ def parse_drop_markdown(md_text: str, drop_type: str) -> list[dict]:
         if footer_match:
             footer = section[footer_match.start():].strip()
 
-        # Strip dates from intro/footer (day header already shows date)
+        # Clean intro and footer
         date_pattern = r"(?:—\s*)?(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}"
-        intro = re.sub(date_pattern, "", intro).strip()
-        footer = re.sub(date_pattern, "", footer).strip()
+        for_cleanup = [
+            (r"^---+\s*$", ""),
+            (r"^\*?_?Papers covered.*$", ""),
+            (r"^\*?_?Classics covered.*$", ""),
+            (r"^Reply with a paper number.*$", ""),
+            (r"^\*?(?:Eval Drop|Paper Drop)\s*[-–—]\s*\*?\s*$", ""),
+            (date_pattern, ""),
+        ]
+        for pattern, repl in for_cleanup:
+            intro = re.sub(pattern, repl, intro, flags=re.MULTILINE)
+            footer = re.sub(pattern, repl, footer, flags=re.MULTILINE)
+        intro = re.sub(r"\n{3,}", "\n\n", intro).strip()
+        footer = re.sub(r"\n{3,}", "\n\n", footer).strip()
 
         # Parse individual papers with per-paper markdown
         papers = parse_papers(section, drop_type, date_iso)
