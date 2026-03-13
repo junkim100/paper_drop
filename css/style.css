@@ -288,32 +288,30 @@ a:hover {
   gap: 32px;
 }
 
-/* --- Day Card --- */
-.day-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  transition: border-color var(--transition);
-}
-.day-card:hover {
-  border-color: var(--accent);
+/* --- Day Section --- */
+.day-section {
+  margin-bottom: 40px;
 }
 
 .day-header {
-  padding: 20px 24px 16px;
-  border-bottom: 1px solid var(--border-subtle);
+  padding: 0 0 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
 .day-date {
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.85rem;
+  font-weight: 700;
   color: var(--accent);
   text-transform: uppercase;
   letter-spacing: 0.06em;
+}
+
+.day-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .day-paper-count {
@@ -326,9 +324,33 @@ a:hover {
   border-radius: 999px;
 }
 
-.day-digest {
+.day-read-count {
+  font-size: 0.72rem;
+  color: var(--success);
+  font-weight: 500;
+}
+
+.day-intro {
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
   padding: 20px 24px;
-  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 16px;
+}
+
+.day-footer {
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  margin-top: 16px;
+}
+
+/* --- Paper Cards --- */
+.paper-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 /* --- Markdown Content --- */
@@ -406,30 +428,48 @@ a:hover {
   margin: 1.2em 0;
 }
 
-/* --- Paper Entry --- */
-.paper-entry {
-  padding: 20px 24px;
-  border-bottom: 1px solid var(--border-primary);
-  transition: background var(--transition);
-  position: relative;
+/* --- Paper Card --- */
+.paper-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: all var(--transition);
 }
-.paper-entry:last-child {
-  border-bottom: none;
+.paper-card:hover {
+  border-color: var(--border-primary);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
-.paper-entry:hover {
-  background: var(--bg-card-hover);
-}
-.paper-entry.kept {
-  background: var(--kept-bg);
+.paper-card.kept {
   border-left: 3px solid var(--kept-border);
+  background: var(--kept-bg);
+}
+.paper-card.read {
+  opacity: 0.75;
+}
+.paper-card.read:hover {
+  opacity: 1;
+}
+.paper-card.focused {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-subtle), var(--shadow-md);
 }
 
-.paper-header {
+.paper-card-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 8px;
+  padding: 18px 20px 0;
+}
+
+.paper-title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
 }
 
 .paper-number {
@@ -437,28 +477,54 @@ a:hover {
   font-weight: 700;
   color: var(--accent);
   background: var(--accent-subtle);
-  padding: 2px 8px;
+  padding: 3px 9px;
   border-radius: 999px;
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
-.paper-info {
-  flex: 1;
-  min-width: 0;
+.paper-title-link {
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text-primary) !important;
+  text-decoration: none !important;
+  transition: color var(--transition);
+}
+.paper-title-link:hover {
+  color: var(--accent) !important;
 }
 
 .paper-title {
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 600;
-  margin-bottom: 2px;
   line-height: 1.4;
 }
 
-.paper-headline {
-  font-size: 0.85rem;
+.paper-card-body {
+  padding: 14px 20px 16px;
+  font-size: 0.9rem;
+  line-height: 1.7;
   color: var(--text-secondary);
-  font-style: italic;
+  cursor: pointer;
+}
+.paper-card-body p {
+  margin-bottom: 0.5em;
+}
+.paper-card-body strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.paper-card-media {
+  padding: 0 20px 18px;
+}
+
+.paper-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 /* --- Keep Checkbox --- */

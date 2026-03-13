@@ -392,78 +392,125 @@
     header.appendChild(container);
   }
 
-  // --- Render Paper Entry ---
-  function renderPaperEntry(paper, dropType, date) {
+  // --- Render Paper Card ---
+  function renderPaperCard(paper, dropType, date) {
     const keepId = `${dropType}-${date}-${paper.number}`;
     const kept = isKept(keepId);
     const expired = isOlderThanDays(date, 10);
+    const readKey = `paper_drop_read_${keepId}`;
+    const isRead = localStorage.getItem(readKey) === "1";
 
-    const entry = document.createElement("div");
-    entry.className = "paper-entry" + (kept ? " kept" : "");
-    entry.dataset.keepId = keepId;
+    const card = document.createElement("div");
+    card.className = "paper-card" + (kept ? " kept" : "") + (isRead ? " read" : "");
+    card.dataset.keepId = keepId;
 
+    // Header with number badge, title (clickable if link), and actions
     const header = document.createElement("div");
-    header.className = "paper-header";
+    header.className = "paper-card-header";
+
+    const titleEl = paper.link
+      ? `<a href="${escapeHtml(paper.link)}" target="_blank" rel="noopener" class="paper-title-link">${escapeHtml(paper.title)}</a>`
+      : `<span class="paper-title">${escapeHtml(paper.title)}</span>`;
 
     header.innerHTML = `
-      <span class="paper-number">#${paper.number}</span>
-      <div class="paper-info">
-        <div class="paper-title">${escapeHtml(paper.title)}</div>
-        ${paper.headline ? `<div class="paper-headline">${escapeHtml(paper.headline)}</div>` : ""}
+      <div class="paper-title-row">
+        <span class="paper-number">#${paper.number}</span>
+        ${titleEl}
       </div>
+      <div class="paper-actions"></div>
     `;
 
-    entry.appendChild(header);
+    card.appendChild(header);
 
-    // Check file existence, then render audio/script/keep controls
+    // Paper digest content (per-paper markdown)
+    if (paper.markdown) {
+      const body = document.createElement("div");
+      body.className = "paper-card-body";
+      body.innerHTML = renderMarkdown(paper.markdown);
+      card.appendChild(body);
+
+      // Mark as read when clicking the body
+      body.addEventListener("click", () => {
+        if (!isRead) {
+          localStorage.setItem(readKey, "1");
+          card.classList.add("read");
+        }
+      });
+    }
+
+    // Media section (audio + script) - only if files exist
+    const mediaSection = document.createElement("div");
+    mediaSection.className = "paper-card-media";
+
     const audioUrl = paper.audio ? BASE_PATH + paper.audio : null;
     const scriptUrl = paper.script ? BASE_PATH + paper.script : null;
+    const actionsEl = header.querySelector(".paper-actions");
 
     Promise.all([
       audioUrl ? fileExists(audioUrl) : Promise.resolve(false),
       scriptUrl ? fileExists(scriptUrl) : Promise.resolve(false),
     ]).then(([hasAudio, hasScript]) => {
       if (hasAudio) {
-        entry.appendChild(createAudioPlayer(paper, dropType, date));
+        mediaSection.appendChild(createAudioPlayer(paper, dropType, date));
       }
       if (hasScript) {
-        entry.appendChild(createScriptDropdown(paper));
+        mediaSection.appendChild(createScriptDropdown(paper));
       }
-      // Only show keep/delete if there are actual files to protect
-      addKeepAction(header, entry, keepId, expired, kept, hasAudio || hasScript);
-    });
-
-    return entry;
-  }
-
-  // --- Render Day Card ---
-  function renderDayCard(drop, dropType) {
-    const card = document.createElement("div");
-    card.className = "day-card";
-
-    const header = document.createElement("div");
-    header.className = "day-header";
-    header.innerHTML = `
-      <span class="day-date">${formatDate(drop.date)}</span>
-      <span class="day-paper-count">${drop.papers.length} paper${drop.papers.length !== 1 ? "s" : ""}</span>
-    `;
-    card.appendChild(header);
-
-    if (drop.markdown) {
-      const digest = document.createElement("div");
-      digest.className = "day-digest";
-      const mdContent = document.createElement("div");
-      mdContent.className = "markdown-content";
-      mdContent.innerHTML = renderMarkdown(drop.markdown);
-      digest.appendChild(mdContent);
-      card.appendChild(digest);
-    }
-
-    drop.papers.forEach((paper) => {
-      card.appendChild(renderPaperEntry(paper, dropType, drop.date));
+      if (hasAudio || hasScript) {
+        card.appendChild(mediaSection);
+      }
+      addKeepAction(actionsEl, card, keepId, expired, kept, hasAudio || hasScript);
     });
 
     return card;
+  }
+
+  // --- Render Day Section ---
+  function renderDaySection(drop, dropType) {
+    const section = document.createElement("div");
+    section.className = "day-section";
+
+    // Day header
+    const header = document.createElement("div");
+    header.className = "day-header";
+    const readCount = drop.papers.filter(p => {
+      const readKey = `paper_drop_read_${dropType}-${drop.date}-${p.number}`;
+      return localStorage.getItem(readKey) === "1";
+    }).length;
+    header.innerHTML = `
+      <span class="day-date">${formatDate(drop.date)}</span>
+      <span class="day-stats">
+        <span class="day-paper-count">${drop.papers.length} paper${drop.papers.length !== 1 ? "s" : ""}</span>
+        ${readCount > 0 ? `<span class="day-read-count">✓ ${readCount} read</span>` : ""}
+      </span>
+    `;
+    section.appendChild(header);
+
+    // TL;DR intro (if present)
+    if (drop.intro) {
+      const intro = document.createElement("div");
+      intro.className = "day-intro";
+      intro.innerHTML = renderMarkdown(drop.intro);
+      section.appendChild(intro);
+    }
+
+    // Individual paper cards
+    const cardsContainer = document.createElement("div");
+    cardsContainer.className = "paper-cards";
+    drop.papers.forEach((paper) => {
+      cardsContainer.appendChild(renderPaperCard(paper, dropType, drop.date));
+    });
+    section.appendChild(cardsContainer);
+
+    // Footer (Field Pulse / Eval Landscape)
+    if (drop.footer) {
+      const footer = document.createElement("div");
+      footer.className = "day-footer";
+      footer.innerHTML = renderMarkdown(drop.footer);
+      section.appendChild(footer);
+    }
+
+    return section;
   }
 
   // --- Load Data ---
@@ -490,7 +537,7 @@
       drops.sort((a, b) => b.date.localeCompare(a.date));
 
       drops.forEach((drop) => {
-        listEl.appendChild(renderDayCard(drop, type));
+        listEl.appendChild(renderDaySection(drop, type));
       });
     } catch (err) {
       listEl.innerHTML = `
@@ -502,10 +549,44 @@
     }
   }
 
+  // --- Keyboard Navigation ---
+  function initKeyboard() {
+    let focusedIndex = -1;
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in inputs
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+
+      const activePanel = document.querySelector(".tab-panel.active");
+      if (!activePanel) return;
+      const cards = activePanel.querySelectorAll(".paper-card");
+      if (!cards.length) return;
+
+      if (e.key === "j" || e.key === "ArrowDown") {
+        e.preventDefault();
+        focusedIndex = Math.min(focusedIndex + 1, cards.length - 1);
+        cards[focusedIndex].scrollIntoView({ behavior: "smooth", block: "center" });
+        cards.forEach(c => c.classList.remove("focused"));
+        cards[focusedIndex].classList.add("focused");
+      } else if (e.key === "k" || e.key === "ArrowUp") {
+        e.preventDefault();
+        focusedIndex = Math.max(focusedIndex - 1, 0);
+        cards[focusedIndex].scrollIntoView({ behavior: "smooth", block: "center" });
+        cards.forEach(c => c.classList.remove("focused"));
+        cards[focusedIndex].classList.add("focused");
+      } else if (e.key === "o" || e.key === "Enter") {
+        if (focusedIndex >= 0 && focusedIndex < cards.length) {
+          const link = cards[focusedIndex].querySelector(".paper-title-link");
+          if (link) window.open(link.href, "_blank");
+        }
+      }
+    });
+  }
+
   // --- Init ---
   function init() {
     initTheme();
     initTabs();
+    initKeyboard();
     loadDrops("paper-drop");
     loadDrops("eval-drop");
   }

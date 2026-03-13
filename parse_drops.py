@@ -52,16 +52,31 @@ def parse_drop_markdown(md_text: str, drop_type: str) -> list[dict]:
         if not date_iso:
             continue
 
-        # Extract markdown (the full section)
-        markdown = section
+        # Extract the TL;DR / intro (everything before first paper header)
+        paper_header_pattern = re.compile(r"^###\s+(?:\d+[.)]\s+|🔥)", re.MULTILINE)
+        first_paper = paper_header_pattern.search(section)
+        
+        # Get intro text (TL;DR section)
+        intro = section[:first_paper.start()].strip() if first_paper else section
+        # Remove the day header from intro
+        intro_lines = intro.split("\n")
+        intro = "\n".join(intro_lines[1:]).strip() if intro_lines else ""
+        
+        # Get footer text (Field Pulse / Eval Landscape - after last paper)
+        footer = ""
+        footer_pattern = re.compile(r"^##\s+(Field Pulse|Eval Landscape|🎯|🌡️)", re.MULTILINE)
+        footer_match = footer_pattern.search(section)
+        if footer_match:
+            footer = section[footer_match.start():].strip()
 
-        # Parse individual papers (### numbered headers)
+        # Parse individual papers with per-paper markdown
         papers = parse_papers(section, drop_type, date_iso)
 
         drops.append(
             {
                 "date": date_iso,
-                "markdown": markdown,
+                "intro": intro,
+                "footer": footer,
                 "papers": papers,
             }
         )
@@ -117,11 +132,22 @@ def parse_papers(section: str, drop_type: str, date_iso: str) -> list[dict]:
         for i, (number, title, start_pos, end_pos) in enumerate(paper_matches):
             next_start = paper_matches[i + 1][2] if i + 1 < len(paper_matches) else len(section)
             content = section[end_pos:next_start].strip()
+            
+            # Remove trailing --- separator
+            content = re.sub(r"\n---\s*$", "", content).strip()
 
             headline = ""
             headline_match = re.match(r"^\*([^*]+)\*", content)
             if headline_match:
                 headline = headline_match.group(1).strip()
+
+            # Extract arxiv link
+            link = ""
+            link_match = re.search(r"\[.*?\]\((https?://[^\)]+)\)", content)
+            if not link_match:
+                link_match = re.search(r"(https?://arxiv\.org/abs/\S+)", content)
+            if link_match:
+                link = link_match.group(1)
 
             prefix = "paper" if drop_type == "paper_drops" else "eval"
             audio_file = f"audio/{prefix}-{date_iso}-{number}.mp3"
@@ -131,6 +157,8 @@ def parse_papers(section: str, drop_type: str, date_iso: str) -> list[dict]:
                 "number": number,
                 "title": title,
                 "headline": headline,
+                "link": link,
+                "markdown": content,
                 "audio": audio_file,
                 "script": script_file,
             })
@@ -146,12 +174,21 @@ def parse_papers(section: str, drop_type: str, date_iso: str) -> list[dict]:
             paper_matches[i + 1].start() if i + 1 < len(paper_matches) else len(section)
         )
         content = section[start:end].strip()
+        content = re.sub(r"\n---\s*$", "", content).strip()
 
         # Extract headline (first italic line)
         headline = ""
         headline_match = re.match(r"^\*([^*]+)\*", content)
         if headline_match:
             headline = headline_match.group(1).strip()
+
+        # Extract arxiv link
+        link = ""
+        link_match = re.search(r"\[.*?\]\((https?://[^\)]+)\)", content)
+        if not link_match:
+            link_match = re.search(r"(https?://arxiv\.org/abs/\S+)", content)
+        if link_match:
+            link = link_match.group(1)
 
         # Build file paths
         prefix = "paper" if drop_type == "paper_drops" else "eval"
@@ -163,6 +200,8 @@ def parse_papers(section: str, drop_type: str, date_iso: str) -> list[dict]:
                 "number": number,
                 "title": title,
                 "headline": headline,
+                "link": link,
+                "markdown": content,
                 "audio": audio_file,
                 "script": script_file,
             }
