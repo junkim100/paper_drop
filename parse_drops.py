@@ -178,6 +178,8 @@ def clean_paper_content(content: str) -> str:
     # Remove standalone arxiv links (title already links there)
     content = re.sub(r"^\[(?:Paper|Link|Read it|arxiv|arXiv).*?\]\(https?://arxiv\.org[^\)]+\)\s*$", "", content, flags=re.MULTILINE)
     content = re.sub(r"^https?://arxiv\.org/abs/\S+\s*$", "", content, flags=re.MULTILINE)
+    # Remove [NEW] / [CLASSIC] tags (shown differently in UI)
+    content = re.sub(r"^\*?\[(?:NEW|CLASSIC)\]\*?\s*$", "", content, flags=re.MULTILINE)
     # Remove "Papers covered:" and "Classics covered:" metadata
     content = re.sub(r"^(?:Papers covered|Classics covered).*$", "", content, flags=re.MULTILINE)
     # Clean up excessive blank lines

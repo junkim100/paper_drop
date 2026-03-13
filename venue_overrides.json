@@ -1,22 +1,98 @@
 {
   "_comment": "Manual venue overrides. Key is arxiv ID or link substring. Parser checks this before fallback.",
-  "2306.05685": {"venue": "NeurIPS 2023", "title": "Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena", "scores": null},
-  "2009.03300": {"venue": "ICLR 2021", "title": "Measuring Massive Multitask Language Understanding", "scores": null},
-  "2110.14168": {"venue": "arXiv 2021", "title": "Training Verifiers to Solve Math Word Problems", "scores": null},
-  "2504.02768": {"venue": "arXiv 2025", "title": null, "scores": null},
-  "2506.07658": {"venue": "arXiv 2025", "title": null, "scores": null},
-  "2603.09821": {"venue": "arXiv 2026", "title": null, "scores": null},
-  "2603.09555": {"venue": "arXiv 2026", "title": null, "scores": null},
-  "2603.09095": {"venue": "arXiv 2026", "title": null, "scores": null},
-  "2603.08091": {"venue": "arXiv 2026", "title": null, "scores": null},
-  "2603.08068": {"venue": "arXiv 2026", "title": null, "scores": null},
-  "2603.08835": {"venue": "arXiv 2026", "title": null, "scores": null},
-  "2603.07392": {"venue": "arXiv 2026", "title": null, "scores": null},
-  "2603.05485": {"venue": "arXiv 2026", "title": null, "scores": null},
-  "2603.01865": {"venue": "TACL 2026", "title": null, "scores": null},
-  "2603.00077": {"venue": "arXiv 2026", "title": null, "scores": null},
-  "2603.10145": {"venue": "arXiv 2026", "title": "Lost in Backpropagation: The LM Head is a Gradient Bottleneck", "scores": null},
-  "2603.10848": {"venue": "arXiv 2026", "title": null, "scores": null},
-  "2603.10913": {"venue": "arXiv 2026", "title": null, "scores": null},
-  "2603.09906": {"venue": "arXiv 2026", "title": null, "scores": null}
+  "2306.05685": {
+    "venue": "NeurIPS 2023",
+    "title": "Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena",
+    "scores": null
+  },
+  "2009.03300": {
+    "venue": "ICLR 2021",
+    "title": "Measuring Massive Multitask Language Understanding",
+    "scores": null
+  },
+  "2110.14168": {
+    "venue": "arXiv 2021",
+    "title": "Training Verifiers to Solve Math Word Problems",
+    "scores": null
+  },
+  "2504.02768": {
+    "venue": "TACL (EMNLP 2025)",
+    "title": null,
+    "scores": null
+  },
+  "2506.07658": {
+    "venue": "arXiv 2025",
+    "title": null,
+    "scores": null
+  },
+  "2603.09821": {
+    "venue": "arXiv 2026",
+    "title": null,
+    "scores": null
+  },
+  "2603.09555": {
+    "venue": "arXiv 2026",
+    "title": null,
+    "scores": null
+  },
+  "2603.09095": {
+    "venue": "arXiv 2026",
+    "title": null,
+    "scores": null
+  },
+  "2603.08091": {
+    "venue": "arXiv 2026",
+    "title": null,
+    "scores": null
+  },
+  "2603.08068": {
+    "venue": "arXiv 2026",
+    "title": null,
+    "scores": null
+  },
+  "2603.08835": {
+    "venue": "arXiv 2026",
+    "title": null,
+    "scores": null
+  },
+  "2603.07392": {
+    "venue": "arXiv 2026",
+    "title": null,
+    "scores": null
+  },
+  "2603.05485": {
+    "venue": "arXiv 2026",
+    "title": null,
+    "scores": null
+  },
+  "2603.01865": {
+    "venue": "arXiv 2026",
+    "title": null,
+    "scores": null
+  },
+  "2603.00077": {
+    "venue": "arXiv 2026",
+    "title": null,
+    "scores": null
+  },
+  "2603.10145": {
+    "venue": "arXiv 2026",
+    "title": "Lost in Backpropagation: The LM Head is a Gradient Bottleneck",
+    "scores": null
+  },
+  "2603.10848": {
+    "venue": "arXiv 2026",
+    "title": null,
+    "scores": null
+  },
+  "2603.10913": {
+    "venue": "arXiv 2026",
+    "title": null,
+    "scores": null
+  },
+  "2603.09906": {
+    "venue": "arXiv 2026",
+    "title": null,
+    "scores": null
+  }
 }
