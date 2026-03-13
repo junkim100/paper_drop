@@ -103,6 +103,23 @@ def parse_date(date_str: str) -> str | None:
     return None
 
 
+def clean_paper_content(content: str) -> str:
+    """Remove day headers, footer sections, and trailing separators from per-paper content."""
+    # Remove any ## day headers that leaked in
+    content = re.sub(r"^##\s+(?:Paper Drop|Eval Drop|🧪|📏).*$", "", content, flags=re.MULTILINE)
+    # Remove footer sections (Eval Landscape, Field Pulse)
+    content = re.sub(r"^##\s+(?:🎯|🌡️|Field Pulse|Eval Landscape).*", "", content, flags=re.MULTILINE | re.DOTALL)
+    # Remove horizontal rules
+    content = re.sub(r"^---+\s*$", "", content, flags=re.MULTILINE)
+    # Remove "Reply with a paper number..." line
+    content = re.sub(r"^Reply with a paper number.*$", "", content, flags=re.MULTILINE)
+    # Remove "Papers covered:" and "Classics covered:" metadata
+    content = re.sub(r"^(?:Papers covered|Classics covered).*$", "", content, flags=re.MULTILINE)
+    # Clean up excessive blank lines
+    content = re.sub(r"\n{3,}", "\n\n", content).strip()
+    return content
+
+
 def extract_vibe(content: str) -> tuple[int, str, str]:
     """Extract vibe check rating from content. Returns (fire_count, vibe_label, cleaned_content)."""
     vibe_match = re.search(r"\*\*Vibe check:\*\*\s*(🔥+)\s*(.*?)$", content, re.MULTILINE)
@@ -165,7 +182,8 @@ def parse_papers(section: str, drop_type: str, date_iso: str) -> list[dict]:
             if headline_match:
                 headline = headline_match.group(1).strip()
 
-            # Extract vibe rating and clean content
+            # Clean and extract metadata
+            content = clean_paper_content(content)
             fires, vibe_label, content = extract_vibe(content)
             water_cooler, content = extract_water_cooler(content)
 
@@ -213,7 +231,8 @@ def parse_papers(section: str, drop_type: str, date_iso: str) -> list[dict]:
         if headline_match:
             headline = headline_match.group(1).strip()
 
-        # Extract vibe rating and clean content
+        # Clean and extract metadata
+        content = clean_paper_content(content)
         fires, vibe_label, content = extract_vibe(content)
         water_cooler, content = extract_water_cooler(content)
 
