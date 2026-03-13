@@ -103,6 +103,30 @@ def parse_date(date_str: str) -> str | None:
     return None
 
 
+def extract_vibe(content: str) -> tuple[int, str, str]:
+    """Extract vibe check rating from content. Returns (fire_count, vibe_label, cleaned_content)."""
+    vibe_match = re.search(r"\*\*Vibe check:\*\*\s*(🔥+)\s*(.*?)$", content, re.MULTILINE)
+    if vibe_match:
+        fires = vibe_match.group(1).count("🔥")
+        label = vibe_match.group(2).strip().rstrip(".")
+        # Remove the vibe check line from content
+        cleaned = content[:vibe_match.start()] + content[vibe_match.end():]
+        cleaned = re.sub(r"\n{3,}", "\n\n", cleaned).strip()
+        return fires, label, cleaned
+    return 0, "", content
+
+
+def extract_water_cooler(content: str) -> tuple[str, str]:
+    """Extract water cooler line. Returns (quote, cleaned_content)."""
+    wc_match = re.search(r"\*\*Water cooler:\*\*\s*(.*?)$", content, re.MULTILINE)
+    if wc_match:
+        quote = wc_match.group(1).strip().strip('"').strip('"').strip('"')
+        cleaned = content[:wc_match.start()] + content[wc_match.end():]
+        cleaned = re.sub(r"\n{3,}", "\n\n", cleaned).strip()
+        return quote, cleaned
+    return "", content
+
+
 def parse_papers(section: str, drop_type: str, date_iso: str) -> list[dict]:
     """Extract individual papers from a day section."""
     papers = []
@@ -141,6 +165,10 @@ def parse_papers(section: str, drop_type: str, date_iso: str) -> list[dict]:
             if headline_match:
                 headline = headline_match.group(1).strip()
 
+            # Extract vibe rating and clean content
+            fires, vibe_label, content = extract_vibe(content)
+            water_cooler, content = extract_water_cooler(content)
+
             # Extract arxiv link
             link = ""
             link_match = re.search(r"\[.*?\]\((https?://[^\)]+)\)", content)
@@ -158,6 +186,9 @@ def parse_papers(section: str, drop_type: str, date_iso: str) -> list[dict]:
                 "title": title,
                 "headline": headline,
                 "link": link,
+                "vibe": fires,
+                "vibe_label": vibe_label,
+                "water_cooler": water_cooler,
                 "markdown": content,
                 "audio": audio_file,
                 "script": script_file,
@@ -182,6 +213,10 @@ def parse_papers(section: str, drop_type: str, date_iso: str) -> list[dict]:
         if headline_match:
             headline = headline_match.group(1).strip()
 
+        # Extract vibe rating and clean content
+        fires, vibe_label, content = extract_vibe(content)
+        water_cooler, content = extract_water_cooler(content)
+
         # Extract arxiv link
         link = ""
         link_match = re.search(r"\[.*?\]\((https?://[^\)]+)\)", content)
@@ -201,6 +236,9 @@ def parse_papers(section: str, drop_type: str, date_iso: str) -> list[dict]:
                 "title": title,
                 "headline": headline,
                 "link": link,
+                "vibe": fires,
+                "vibe_label": vibe_label,
+                "water_cooler": water_cooler,
                 "markdown": content,
                 "audio": audio_file,
                 "script": script_file,

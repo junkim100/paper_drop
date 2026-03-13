@@ -404,9 +404,13 @@
     card.className = "paper-card" + (kept ? " kept" : "") + (isRead ? " read" : "");
     card.dataset.keepId = keepId;
 
-    // Header with number badge, title (clickable if link), and actions
+    // Header with number badge, vibe fires, title (clickable if link), and actions
     const header = document.createElement("div");
     header.className = "paper-card-header";
+
+    const vibeHtml = paper.vibe
+      ? `<span class="vibe-badge" title="${escapeHtml(paper.vibe_label || "")}">${"🔥".repeat(paper.vibe)}</span>`
+      : "";
 
     const titleEl = paper.link
       ? `<a href="${escapeHtml(paper.link)}" target="_blank" rel="noopener" class="paper-title-link">${escapeHtml(paper.title)}</a>`
@@ -415,6 +419,7 @@
     header.innerHTML = `
       <div class="paper-title-row">
         <span class="paper-number">#${paper.number}</span>
+        ${vibeHtml}
         ${titleEl}
       </div>
       <div class="paper-actions"></div>
@@ -485,6 +490,30 @@
       </span>
     `;
     section.appendChild(header);
+
+    // Paper overview map
+    if (drop.papers.length > 0) {
+      const map = document.createElement("div");
+      map.className = "paper-map";
+      drop.papers.forEach((p, idx) => {
+        const chip = document.createElement("button");
+        chip.className = "map-chip";
+        const vibeStr = p.vibe ? "🔥".repeat(p.vibe) + " " : "";
+        chip.innerHTML = `<span class="map-chip-num">#${p.number}</span> ${vibeStr}${escapeHtml(p.title)}`;
+        if (p.vibe_label) chip.title = p.vibe_label;
+        chip.addEventListener("click", () => {
+          const cards = section.querySelectorAll(".paper-card");
+          if (cards[idx]) {
+            cards[idx].scrollIntoView({ behavior: "smooth", block: "center" });
+            cards.forEach(c => c.classList.remove("focused"));
+            cards[idx].classList.add("focused");
+            setTimeout(() => cards[idx].classList.remove("focused"), 2000);
+          }
+        });
+        map.appendChild(chip);
+      });
+      section.appendChild(map);
+    }
 
     // TL;DR intro (if present)
     if (drop.intro) {
