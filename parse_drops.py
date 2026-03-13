@@ -1,6 +1,7 @@
 """Parse markdown drop archives into JSON for the Paper Drop site."""
 
 import json
+import os
 import re
 from pathlib import Path
 
@@ -103,30 +104,65 @@ def parse_date(date_str: str) -> str | None:
     return None
 
 
-def extract_venue(content: str) -> tuple[str, str]:
-    """Extract venue/source from the Actual title line. Returns (venue, cleaned_content)."""
-    # Match: **Actual title:** ... | **From:** Lab | [link](url)
+def load_venue_overrides() -> dict:
+    """Load venue overrides from venue_overrides.json if it exists."""
+    override_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "venue_overrides.json")
+    if os.path.exists(override_path):
+        import json as _json
+        with open(override_path) as f:
+            return _json.load(f)
+    return {}
+
+_VENUE_OVERRIDES = load_venue_overrides()
+
+
+def extract_venue(content: str, link: str = "") -> tuple[str, str]:
+    """Extract venue from content or link. Returns (venue, cleaned_content)."""
+    # Check overrides first
+    for arxiv_id, override in _VENUE_OVERRIDES.items():
+        if arxiv_id.startswith("_"):
+            continue
+        if arxiv_id in (link or "") or arxiv_id in content:
+            # Remove "Actual title" lines
+            content = re.sub(r"\*\*Actual title:\*\*.*$", "", content, flags=re.MULTILINE)
+            content = re.sub(r"\n{3,}", "\n\n", content).strip()
+            venue = override.get("venue", "")
+            scores = override.get("scores")
+            if scores:
+                venue = f"{venue} ({scores})"
+            return venue, content
+
+    # Remove "Actual title" lines from content (metadata, not display)
     actual_match = re.search(
-        r"\*\*Actual title:\*\*\s*(.+?)(?:\s*\|\s*\*\*From:\*\*\s*(.+?))?(?:\s*\|\s*\[.*?\]\(.*?\))?\s*$",
-        content, re.MULTILINE
+        r"\*\*Actual title:\*\*.*$", content, re.MULTILINE
     )
-    venue = ""
     if actual_match:
-        from_lab = actual_match.group(2)
-        if from_lab:
-            venue = from_lab.strip()
-        # Remove the entire "Actual title" line from content
         content = content[:actual_match.start()] + content[actual_match.end():]
         content = re.sub(r"\n{3,}", "\n\n", content).strip()
-    
-    # Also try to detect arxiv year for venue label
-    if not venue:
-        arxiv_match = re.search(r"arxiv\.org/abs/(\d{2})", content)
+
+    # Check for explicit venue markers in content
+    venue_match = re.search(r"\*\*Venue:\*\*\s*(.+?)$", content, re.MULTILINE)
+    if venue_match:
+        venue = venue_match.group(1).strip()
+        content = content[:venue_match.start()] + content[venue_match.end():]
+        content = re.sub(r"\n{3,}", "\n\n", content).strip()
+        return venue, content
+
+    # Fallback: derive from arxiv ID year
+    if link:
+        arxiv_match = re.search(r"arxiv\.org/abs/(\d{2})", link)
         if arxiv_match:
-            year_prefix = arxiv_match.group(1)
-            venue = f"arXiv 20{year_prefix}"
+            return f"arXiv 20{arxiv_match.group(1)}", content
     
-    return venue, content
+    arxiv_match = re.search(r"arxiv\.org/abs/(\d{2})", content)
+    if arxiv_match:
+        return f"arXiv 20{arxiv_match.group(1)}", content
+
+    # HN link
+    if "news.ycombinator.com" in content or "news.ycombinator.com" in (link or ""):
+        return "HN Discussion", content
+
+    return "", content
 
 
 def clean_paper_content(content: str) -> str:
@@ -139,6 +175,9 @@ def clean_paper_content(content: str) -> str:
     content = re.sub(r"^---+\s*$", "", content, flags=re.MULTILINE)
     # Remove "Reply with a paper number..." line
     content = re.sub(r"^Reply with a paper number.*$", "", content, flags=re.MULTILINE)
+    # Remove standalone arxiv links (title already links there)
+    content = re.sub(r"^\[(?:Paper|Link|Read it|arxiv|arXiv).*?\]\(https?://arxiv\.org[^\)]+\)\s*$", "", content, flags=re.MULTILINE)
+    content = re.sub(r"^https?://arxiv\.org/abs/\S+\s*$", "", content, flags=re.MULTILINE)
     # Remove "Papers covered:" and "Classics covered:" metadata
     content = re.sub(r"^(?:Papers covered|Classics covered).*$", "", content, flags=re.MULTILINE)
     # Clean up excessive blank lines
@@ -210,17 +249,18 @@ def parse_papers(section: str, drop_type: str, date_iso: str) -> list[dict]:
 
             # Clean and extract metadata
             content = clean_paper_content(content)
-            venue, content = extract_venue(content)
-            fires, vibe_label, content = extract_vibe(content)
-            water_cooler, content = extract_water_cooler(content)
 
-            # Extract arxiv link
+            # Extract link
             link = ""
             link_match = re.search(r"\[.*?\]\((https?://[^\)]+)\)", content)
             if not link_match:
                 link_match = re.search(r"(https?://arxiv\.org/abs/\S+)", content)
             if link_match:
                 link = link_match.group(1)
+
+            venue, content = extract_venue(content, link)
+            fires, vibe_label, content = extract_vibe(content)
+            water_cooler, content = extract_water_cooler(content)
 
             prefix = "paper" if drop_type == "paper_drops" else "eval"
             audio_file = f"audio/{prefix}-{date_iso}-{number}.mp3"
@@ -261,17 +301,18 @@ def parse_papers(section: str, drop_type: str, date_iso: str) -> list[dict]:
 
         # Clean and extract metadata
         content = clean_paper_content(content)
-        venue, content = extract_venue(content)
-        fires, vibe_label, content = extract_vibe(content)
-        water_cooler, content = extract_water_cooler(content)
 
-        # Extract arxiv link
+        # Extract link first (needed for venue)
         link = ""
         link_match = re.search(r"\[.*?\]\((https?://[^\)]+)\)", content)
         if not link_match:
             link_match = re.search(r"(https?://arxiv\.org/abs/\S+)", content)
         if link_match:
             link = link_match.group(1)
+
+        venue, content = extract_venue(content, link)
+        fires, vibe_label, content = extract_vibe(content)
+        water_cooler, content = extract_water_cooler(content)
 
         # Build file paths
         prefix = "paper" if drop_type == "paper_drops" else "eval"
