@@ -561,11 +561,12 @@ a:hover {
 .markdown-content strong {
   font-weight: 600;
 }
-.markdown-content hr {
-  display: none;
-}
-.paper-card-body hr {
-  display: none;
+hr,
+.markdown-content hr,
+.paper-card-body hr,
+.day-intro hr,
+.day-footer hr {
+  display: none !important;
 }
 .paper-card-body h1,
 .paper-card-body h2 {
