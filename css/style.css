@@ -426,9 +426,11 @@ a:hover {
 /* --- Vibe Legend --- */
 .vibe-legend {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
   flex-wrap: wrap;
+  margin-left: auto;
+  padding: 8px 0;
 }
 .vibe-legend-item {
   font-size: 0.65rem;
@@ -450,10 +452,23 @@ a:hover {
 
 /* --- Vibe Badge --- */
 .vibe-badge {
-  font-size: 0.75rem;
+  font-size: 1rem;
   flex-shrink: 0;
-  letter-spacing: -2px;
+  letter-spacing: -1px;
   margin-right: 2px;
+}
+
+/* --- Venue Tag --- */
+.paper-venue {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  padding: 2px 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  margin-top: 4px;
+  white-space: nowrap;
 }
 
 .day-intro {

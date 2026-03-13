@@ -103,6 +103,32 @@ def parse_date(date_str: str) -> str | None:
     return None
 
 
+def extract_venue(content: str) -> tuple[str, str]:
+    """Extract venue/source from the Actual title line. Returns (venue, cleaned_content)."""
+    # Match: **Actual title:** ... | **From:** Lab | [link](url)
+    actual_match = re.search(
+        r"\*\*Actual title:\*\*\s*(.+?)(?:\s*\|\s*\*\*From:\*\*\s*(.+?))?(?:\s*\|\s*\[.*?\]\(.*?\))?\s*$",
+        content, re.MULTILINE
+    )
+    venue = ""
+    if actual_match:
+        from_lab = actual_match.group(2)
+        if from_lab:
+            venue = from_lab.strip()
+        # Remove the entire "Actual title" line from content
+        content = content[:actual_match.start()] + content[actual_match.end():]
+        content = re.sub(r"\n{3,}", "\n\n", content).strip()
+    
+    # Also try to detect arxiv year for venue label
+    if not venue:
+        arxiv_match = re.search(r"arxiv\.org/abs/(\d{2})", content)
+        if arxiv_match:
+            year_prefix = arxiv_match.group(1)
+            venue = f"arXiv 20{year_prefix}"
+    
+    return venue, content
+
+
 def clean_paper_content(content: str) -> str:
     """Remove day headers, footer sections, and trailing separators from per-paper content."""
     # Remove any ## day headers that leaked in
@@ -184,6 +210,7 @@ def parse_papers(section: str, drop_type: str, date_iso: str) -> list[dict]:
 
             # Clean and extract metadata
             content = clean_paper_content(content)
+            venue, content = extract_venue(content)
             fires, vibe_label, content = extract_vibe(content)
             water_cooler, content = extract_water_cooler(content)
 
@@ -206,6 +233,7 @@ def parse_papers(section: str, drop_type: str, date_iso: str) -> list[dict]:
                 "link": link,
                 "vibe": fires,
                 "vibe_label": vibe_label,
+                "venue": venue,
                 "water_cooler": water_cooler,
                 "markdown": content,
                 "audio": audio_file,
@@ -233,6 +261,7 @@ def parse_papers(section: str, drop_type: str, date_iso: str) -> list[dict]:
 
         # Clean and extract metadata
         content = clean_paper_content(content)
+        venue, content = extract_venue(content)
         fires, vibe_label, content = extract_vibe(content)
         water_cooler, content = extract_water_cooler(content)
 
@@ -257,6 +286,7 @@ def parse_papers(section: str, drop_type: str, date_iso: str) -> list[dict]:
                 "link": link,
                 "vibe": fires,
                 "vibe_label": vibe_label,
+                "venue": venue,
                 "water_cooler": water_cooler,
                 "markdown": content,
                 "audio": audio_file,

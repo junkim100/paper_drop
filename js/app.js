@@ -416,11 +416,16 @@
       ? `<a href="${escapeHtml(paper.link)}" target="_blank" rel="noopener" class="paper-title-link">${escapeHtml(paper.title)}</a>`
       : `<span class="paper-title">${escapeHtml(paper.title)}</span>`;
 
+    const venueHtml = paper.venue
+      ? `<span class="paper-venue">${escapeHtml(paper.venue)}</span>`
+      : "";
+
     header.innerHTML = `
       <div class="paper-title-row">
         <span class="paper-number">#${paper.number}</span>
         ${vibeHtml}
         ${titleEl}
+        ${venueHtml}
       </div>
       <div class="paper-actions"></div>
     `;
