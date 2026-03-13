@@ -414,12 +414,25 @@
 
     entry.appendChild(header);
 
+    // Only show audio player if the file actually exists
     if (paper.audio) {
-      entry.appendChild(createAudioPlayer(paper, dropType, date));
+      const audioUrl = BASE_PATH + paper.audio;
+      fetch(audioUrl, { method: "HEAD" }).then((r) => {
+        if (r.ok) {
+          entry.appendChild(createAudioPlayer(paper, dropType, date));
+        }
+      }).catch(() => {});
     }
 
+    // Only show script dropdown if the file actually exists
     if (paper.script) {
-      entry.appendChild(createScriptDropdown(paper));
+      const scriptUrl = BASE_PATH + paper.script;
+      fetch(scriptUrl, { method: "HEAD" }).then((r) => {
+        if (r.ok) {
+          // Insert after audio player if it exists, otherwise after header
+          entry.appendChild(createScriptDropdown(paper));
+        }
+      }).catch(() => {});
     }
 
     return entry;
