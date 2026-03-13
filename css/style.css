@@ -423,42 +423,29 @@ a:hover {
   font-weight: 500;
 }
 
-/* --- Paper Map (overview) --- */
-.paper-map {
+/* --- Vibe Legend --- */
+.vibe-legend {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 16px;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
 }
-
-.map-chip {
+.vibe-legend-item {
+  font-size: 0.65rem;
+  color: var(--text-muted);
   display: flex;
   align-items: center;
-  gap: 6px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-md);
-  padding: 10px 14px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  color: var(--text-primary);
-  text-align: left;
-  transition: all var(--transition);
-  font-family: var(--font-sans);
+  gap: 3px;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
-.map-chip:hover {
-  border-color: var(--accent);
-  background: var(--accent-subtle);
-  transform: translateX(4px);
+.vl-fires {
+  font-size: 0.6rem;
+  letter-spacing: -2px;
 }
-.map-chip-num {
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: var(--accent);
-  flex-shrink: 0;
+@media (max-width: 600px) {
+  .vibe-legend {
+    display: none;
+  }
 }
 
 /* --- Vibe Badge --- */

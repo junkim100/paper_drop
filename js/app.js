@@ -492,30 +492,6 @@
     `;
     section.appendChild(header);
 
-    // Paper overview map
-    if (drop.papers.length > 0) {
-      const map = document.createElement("div");
-      map.className = "paper-map";
-      drop.papers.forEach((p, idx) => {
-        const chip = document.createElement("button");
-        chip.className = "map-chip";
-        const vibeStr = p.vibe ? "🔥".repeat(p.vibe) + " " : "";
-        chip.innerHTML = `<span class="map-chip-num">#${p.number}</span> ${vibeStr}${escapeHtml(p.title)}`;
-        if (p.vibe_label) chip.title = p.vibe_label;
-        chip.addEventListener("click", () => {
-          const cards = section.querySelectorAll(".paper-card");
-          if (cards[idx]) {
-            cards[idx].scrollIntoView({ behavior: "smooth", block: "center" });
-            cards.forEach(c => c.classList.remove("focused"));
-            cards[idx].classList.add("focused");
-            setTimeout(() => cards[idx].classList.remove("focused"), 2000);
-          }
-        });
-        map.appendChild(chip);
-      });
-      section.appendChild(map);
-    }
-
     // TL;DR intro (if present)
     if (drop.intro) {
       const intro = document.createElement("div");
