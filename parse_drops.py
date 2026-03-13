@@ -70,6 +70,11 @@ def parse_drop_markdown(md_text: str, drop_type: str) -> list[dict]:
         if footer_match:
             footer = section[footer_match.start():].strip()
 
+        # Strip dates from intro/footer (day header already shows date)
+        date_pattern = r"(?:—\s*)?(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}"
+        intro = re.sub(date_pattern, "", intro).strip()
+        footer = re.sub(date_pattern, "", footer).strip()
+
         # Parse individual papers with per-paper markdown
         papers = parse_papers(section, drop_type, date_iso)
 
@@ -180,6 +185,8 @@ def clean_paper_content(content: str) -> str:
     content = re.sub(r"^https?://arxiv\.org/abs/\S+\s*$", "", content, flags=re.MULTILINE)
     # Remove [NEW] / [CLASSIC] tags (shown differently in UI)
     content = re.sub(r"^\*?\[(?:NEW|CLASSIC)\]\*?\s*$", "", content, flags=re.MULTILINE)
+    # Remove date references like "March 13, 2026" or "— March 13, 2026" (day header already shows date)
+    content = re.sub(r"(?:—\s*)?(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}", "", content)
     # Remove "Papers covered:" and "Classics covered:" metadata
     content = re.sub(r"^(?:Papers covered|Classics covered).*$", "", content, flags=re.MULTILINE)
     # Clean up excessive blank lines
