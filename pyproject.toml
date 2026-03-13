@@ -1,0 +1,13 @@
+[project]
+name = "paper-drop"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.12"
+dependencies = [
+    "fire>=0.7.1",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.6",
+]
