@@ -361,6 +361,7 @@ def parse_papers(section: str, drop_type: str, date_iso: str) -> list[dict]:
 def convert(
     paper_drops_md: str = "~/openclaw/memory/paper_drops.md",
     eval_drops_md: str = "~/openclaw/memory/eval_drops.md",
+    interp_drops_md: str = "~/openclaw/memory/interp_drops.md",
     output_dir: str = "data",
 ):
     """Convert markdown drop archives to JSON.
@@ -368,6 +369,7 @@ def convert(
     Args:
         paper_drops_md: Path to paper_drops.md file.
         eval_drops_md: Path to eval_drops.md file.
+        interp_drops_md: Path to interp_drops.md file.
         output_dir: Directory to write JSON output files.
     """
     output_path = Path(output_dir)
@@ -376,6 +378,7 @@ def convert(
     for md_path_str, drop_type, json_name in [
         (paper_drops_md, "paper_drops", "paper_drops.json"),
         (eval_drops_md, "eval_drops", "eval_drops.json"),
+        (interp_drops_md, "interp_drops", "interp_drops.json"),
     ]:
         md_path = Path(md_path_str).expanduser()
         if md_path.exists():

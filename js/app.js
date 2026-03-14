@@ -653,6 +653,7 @@
     initKeyboard();
     loadDrops("paper-drop");
     loadDrops("eval-drop");
+    loadDrops("interp-drop");
 
     // Update timeline on scroll and tab switch
     window.addEventListener("scroll", updateTimelineActive, { passive: true });

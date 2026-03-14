@@ -37,6 +37,10 @@
         <span class="tab-icon">📊</span>
         Eval Drop
       </button>
+      <button class="tab-btn" data-tab="interp-drop" role="tab" aria-selected="false" aria-controls="interp-drop" id="tab-interp-drop">
+        <span class="tab-icon">🔬</span>
+        Interp Drop
+      </button>
       <div class="vibe-legend">
         <span class="vibe-legend-item"><span class="vl-fires">🔥🔥🔥🔥🔥</span> Must read</span>
         <span class="vibe-legend-item"><span class="vl-fires">🔥🔥🔥🔥</span> Solid</span>
@@ -70,6 +74,19 @@
         <p class="panel-desc">Evaluation & benchmark research — curated daily</p>
       </div>
       <div id="eval-drop-list" class="drop-list">
+        <div class="loading-state">
+          <div class="spinner"></div>
+          <p>Loading papers...</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="interp-drop" class="tab-panel" role="tabpanel" aria-labelledby="tab-interp-drop">
+      <div class="panel-header">
+        <h2>Interp Drop</h2>
+        <p class="panel-desc">Mechanistic interpretability research — curated daily</p>
+      </div>
+      <div id="interp-drop-list" class="drop-list">
         <div class="loading-state">
           <div class="spinner"></div>
           <p>Loading papers...</p>
