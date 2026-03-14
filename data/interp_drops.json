@@ -1,8 +1,61 @@
 [
   {
     "date": "2026-03-14",
-    "intro": "1. Refusal in Language Models Is Mediated by a Single Direction (Arditi et al.) - NeurIPS 2024 - arxiv:2406.11717\n2. The Bayesian Geometry of Transformer Attention (Misra et al.) - arXiv 2025 - arxiv:2512.22471\n3. Interpretable and Steerable Concept Bottleneck Sparse Autoencoders (Kulkarni et al.) - arXiv 2025 - arxiv:2512.10805\n4. The Dual-Stream Transformer: Channelized Architecture for Interpretable Language Modeling (Kerce et al.) - arXiv 2026 - arxiv:2603.07461\n   + Companion: Interpretable-by-Design Transformers via Architectural Stream Independence - arxiv:2603.07482",
+    "intro": "### TL;DR\n- Refusal in LLMs lives on a single direction in activation space. Erase it and safety vanishes. The OG \"abliteration\" paper, now peer-reviewed at NeurIPS.\n- Transformers literally do Bayesian inference geometrically: residual streams are beliefs, FFNs update posteriors, attention routes evidence. Proven in controlled \"wind tunnels.\"\n- Most SAE neurons are useless for steering. CB-SAE prunes the dead weight and grafts on user-defined concepts, boosting interpretability by 32%.",
     "footer": "",
-    "papers": []
+    "papers": [
+      {
+        "number": 1,
+        "title": "One Direction to Rule All Refusals",
+        "headline": "",
+        "link": "",
+        "vibe": 5,
+        "vibe_label": "**Water cooler:** \"Safety alignment is literally a line you can cross.\"",
+        "venue": "",
+        "water_cooler": "",
+        "markdown": "**One-liner:** Safety alignment in chat models collapses to a single vector you can just subtract out.\n**The problem:** We fine-tune models to refuse harmful requests, but nobody understood the internal mechanism. Is refusal distributed across the whole network or concentrated somewhere?\n**The trick:** Arditi et al. found that across 13 open-source chat models (up to 72B params), refusal is mediated by a one-dimensional subspace in the residual stream. Erase that direction and the model loses all refusal. Add it back and it refuses even \"tell me a joke.\" This became the basis for \"abliteration,\" the white-box jailbreak technique.\n**Numbers:** Works across 13 models, one direction each. The method also explains how adversarial suffixes work: they suppress propagation of this exact direction.\n**The catch:** This means current safety fine-tuning is extremely brittle. One vector is all that stands between your model and chaos.",
+        "audio": "audio/eval-2026-03-14-1.mp3",
+        "script": "scripts/eval-2026-03-14-1.txt"
+      },
+      {
+        "number": 2,
+        "title": "Transformers Are Secret Bayesians (And We Can Prove It)",
+        "headline": "",
+        "link": "",
+        "vibe": 4,
+        "vibe_label": "**Water cooler:** \"Your transformer isn't just pattern matching, it's literally computing Bayes' rule with geometry.\"",
+        "venue": "",
+        "water_cooler": "",
+        "markdown": "**One-liner:** Built controlled test environments where the true Bayesian posterior is known, then showed transformers nail it geometrically.\n**The problem:** People keep claiming transformers do Bayesian reasoning in-context, but you can't verify this on natural data because you don't know the true posterior. Plus large models might just be memorizing.\n**The trick:** They built \"Bayesian wind tunnels\" where the correct posterior is analytically known and memorization is provably impossible. Small transformers reproduced posteriors with 10^-3 to 10^-4 bit accuracy. The mechanism: residual streams carry beliefs, FFNs do posterior updates, attention does content-addressable routing. They found orthogonal key bases, progressive query-key alignment, and a low-dimensional value manifold parameterized by posterior entropy.\n**Numbers:** Capacity-matched MLPs fail by orders of magnitude. The value manifold \"unfurls\" during training while attention patterns stay stable.\n**The catch:** These are small, controlled transformers. Bridging to LLM-scale reasoning is still a leap.",
+        "audio": "audio/eval-2026-03-14-2.mp3",
+        "script": "scripts/eval-2026-03-14-2.txt"
+      },
+      {
+        "number": 3,
+        "title": "Most SAE Neurons Are Dead Weight. Fix It With Concept Bottlenecks.",
+        "headline": "",
+        "link": "",
+        "vibe": 3,
+        "vibe_label": "**Water cooler:** \"SAEs have a junk drawer problem. CB-SAE Marie Kondo'd it.\"",
+        "venue": "",
+        "water_cooler": "",
+        "markdown": "**One-liner:** Prune the useless SAE features, graft on user-defined concepts, get actually steerable representations.\n**The problem:** SAEs are the hot tool for mech interp, but most of their learned neurons have low interpretability OR low steerability OR both. And because SAEs are unsupervised, the concepts you care about might not even show up in the dictionary.\n**The trick:** CB-SAE (Concept Bottleneck SAE) is a post-hoc framework. Step one: prune neurons that score poorly on new interpretability and steerability metrics. Step two: augment the latent space with a lightweight concept bottleneck aligned to whatever concepts the user defines. Works on both LVLMs and image generation.\n**Numbers:** +32.1% interpretability, +14.5% steerability across LVLMs and image gen tasks.\n**The catch:** You need to define your concept set upfront. If you don't know what you're looking for, unsupervised SAEs still have a role.",
+        "audio": "audio/eval-2026-03-14-3.mp3",
+        "script": "scripts/eval-2026-03-14-3.txt"
+      },
+      {
+        "number": 4,
+        "title": "What If Transformers Were Interpretable By Construction?",
+        "headline": "",
+        "link": "",
+        "vibe": 3,
+        "vibe_label": "**Water cooler:** \"Instead of trying to understand the mess, just don't make the mess.\"",
+        "venue": "",
+        "water_cooler": "",
+        "markdown": "**One-liner:** Split the residual stream into token and context channels so you can actually see what each component does.\n**The problem:** Standard transformers mash everything into one residual stream. Attention, FFN outputs, positional info, semantic content. It's all entangled, and post-hoc interpretability tools are fighting uphill.\n**The trick:** The Dual-Stream Transformer splits the residual stream into a token stream (updated by attention) and a context stream (updated by FFNs). A companion paper (Kerce, same week) goes further with a \"Late Fusion Architecture\" that delays integration until output, proving that suppressing recency heads in their architecture causes minimal semantic damage (Cohen's d = -0.158) vs catastrophic collapse in standard transformers (d = -0.672).\n**Numbers:** Fully independent streams cost 8% validation loss. Their recommended Kronecker mixing strategy costs only 2.5%. All configs survive attention amplification up to 16x at inference, suggesting discrete algorithm learning.\n**The catch:** 29M parameter scale only. DARPA-funded, so more may be coming, but scaling these architectural constraints is the real test.\n\n## Interp Landscape\nThe field is splitting into two camps: post-hoc (SAEs, probing, circuit finding on existing models) and by-design (architectural constraints that bake in interpretability). The refusal direction paper showed how powerful even simple linear probes can be when you find the right subspace. Meanwhile, the Bayesian geometry work is quietly building the theoretical foundations that could eventually explain why all these linear methods work so well. The question everyone's circling: can interpretable-by-design architectures scale without sacrificing the performance that makes transformers worth interpreting in the first place?",
+        "audio": "audio/eval-2026-03-14-4.mp3",
+        "script": "scripts/eval-2026-03-14-4.txt"
+      }
+    ]
   }
 ]
