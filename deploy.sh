@@ -15,7 +15,7 @@ echo ""
 # 1. Parse markdown archives into JSON
 echo "[1/5] Parsing markdown archives..."
 if command -v uv &>/dev/null; then
-    uv run python "$SCRIPT_DIR/parse_drops.py" \
+    cd "$SCRIPT_DIR" && uv run python "$SCRIPT_DIR/parse_drops.py" \
         --paper_drops_md="$MEMORY_DIR/paper_drops.md" \
         --eval_drops_md="$MEMORY_DIR/eval_drops.md" \
         --output_dir="$SCRIPT_DIR/data"
