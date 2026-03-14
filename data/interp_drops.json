@@ -1,1 +1,8 @@
-[]
+[
+  {
+    "date": "2026-03-14",
+    "intro": "1. Refusal in Language Models Is Mediated by a Single Direction (Arditi et al.) - NeurIPS 2024 - arxiv:2406.11717\n2. The Bayesian Geometry of Transformer Attention (Misra et al.) - arXiv 2025 - arxiv:2512.22471\n3. Interpretable and Steerable Concept Bottleneck Sparse Autoencoders (Kulkarni et al.) - arXiv 2025 - arxiv:2512.10805\n4. The Dual-Stream Transformer: Channelized Architecture for Interpretable Language Modeling (Kerce et al.) - arXiv 2026 - arxiv:2603.07461\n   + Companion: Interpretable-by-Design Transformers via Architectural Stream Independence - arxiv:2603.07482",
+    "footer": "",
+    "papers": []
+  }
+]
