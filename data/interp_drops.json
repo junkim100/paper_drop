@@ -57,5 +57,77 @@
         "script": "scripts/eval-2026-03-14-4.txt"
       }
     ]
+  },
+  {
+    "date": "2026-03-16",
+    "intro": "### TL;DR\n- Superposition isn't just noise to filter out. When features are correlated, interference becomes constructive, explaining the semantic clusters we see in real models.\n- SAE features capture meaning above surface tokens: Serbian in Cyrillic and Latin activates the same features, and changing script matters less than paraphrasing.\n- SAEs work on time series too. Applied to Chronos-T5, they reveal that mid-layer change-detection features matter most for forecasting, not the semantically rich final layers.",
+    "footer": "",
+    "papers": [
+      {
+        "number": 1,
+        "title": "Superposition Has Been Lying to Us (A Little)",
+        "headline": "",
+        "link": "",
+        "vibe": 4,
+        "vibe_label": "**Water cooler:** \"Turns out superposition isn't fighting interference. It's surfing it.\"",
+        "venue": "",
+        "water_cooler": "",
+        "markdown": "**One-liner:** Feature correlations in real data make interference constructive, not just something ReLUs need to clean up.\n**The problem:** The standard superposition story (Elhage et al. 2022) assumes features are sparse and uncorrelated. Models pack more features than dimensions, interference is noise, ReLUs filter it. Clean theory. But real data has correlated features, and nobody checked what that does to the geometry.\n**The trick:** They built BOWS (Bag-of-Words Superposition), a controlled setting using binary BoW representations of actual internet text. Key finding: when features co-activate (are correlated), models arrange them so interference is constructive between co-occurring features. Weight decay amplifies this effect. This naturally produces the semantic clusters and cyclical structures people have observed in real LLMs but couldn't explain.\n**Numbers:** Models trained with weight decay show significantly more correlation-aligned geometry. The paper provides code and reproduces real-world observations from prior LLM probing work.\n**The catch:** Still a controlled/toy setting. Bridging from BOWS to full transformer internals needs more work.",
+        "audio": "audio/eval-2026-03-16-1.mp3",
+        "script": "scripts/eval-2026-03-16-1.txt"
+      },
+      {
+        "number": 2,
+        "title": "Same Meaning, Different Alphabet, Same SAE Features",
+        "headline": "",
+        "link": "",
+        "vibe": 4,
+        "vibe_label": "**Water cooler:** \"SAEs don't care about your alphabet. They read vibes.\"",
+        "venue": "",
+        "water_cooler": "",
+        "markdown": "**One-liner:** Serbian written in Latin vs Cyrillic shares zero tokens but activates the same SAE features, proving SAEs capture semantics above tokenization.\n**The problem:** SAE features look interpretable, but are they capturing meaning or just surface patterns? Hard to test because changing the words usually changes the meaning.\n**The trick:** Serbian digraphia is a perfect natural experiment: same language, two scripts (Latin and Cyrillic), near-perfect character mapping, completely different tokenization (zero shared tokens). They ran identical sentences through both scripts on Gemma models (270M to 27B) and compared SAE feature activations. Result: massive feature overlap, far above random baselines. Changing script causes less representational divergence than paraphrasing within the same script.\n**Numbers:** Script invariance strengthens with scale. Cross-script cross-paraphrase comparisons (combos rare in training data) still show substantial overlap, ruling out memorization.\n**The catch:** Serbian-specific. Would be great to see this replicated with other digraphic languages or transliteration pairs (Hindi-Urdu, Chinese traditional-simplified).",
+        "audio": "audio/eval-2026-03-16-2.mp3",
+        "script": "scripts/eval-2026-03-16-2.txt"
+      },
+      {
+        "number": 3,
+        "title": "SAEs Meet Time Series: Chronos Has a Mid-Life Crisis",
+        "headline": "",
+        "link": "",
+        "vibe": 3,
+        "vibe_label": "**Water cooler:** \"Chronos's best forecasting features are having a mid-layer crisis.\"",
+        "venue": "",
+        "water_cooler": "",
+        "markdown": "**One-liner:** First SAE application to a time series foundation model. The most causally important features live in the middle, not where you'd expect.\n**The problem:** Time series foundation models (TSFMs) are being deployed in finance, healthcare, and energy, but nobody knows what they've actually learned. Mechanistic interpretability has been an NLP/vision thing.\n**The trick:** They trained TopK SAEs on Chronos-T5-Large (710M params) across six layers and ran 392 single-feature ablation experiments. Found a clean depth hierarchy: early layers encode frequency features, mid-encoder concentrates change-detection features, final encoder has rich semantic taxonomy. Plot twist: the mid-encoder features are the most causally critical (max single-feature CRPS degradation = 38.61), and progressively ablating the final layer actually improves forecasts.\n**Numbers:** Every single ablated feature degrades CRPS, confirming causal relevance across the board. The final layer result is counterintuitive and suggests over-parameterization.\n**The catch:** One model family (Chronos-T5). Need to see if this hierarchy generalizes across architectures.",
+        "audio": "audio/eval-2026-03-16-3.mp3",
+        "script": "scripts/eval-2026-03-16-3.txt"
+      },
+      {
+        "number": 4,
+        "title": "Noise-Canceling Headphones for Hallucinations",
+        "headline": "",
+        "link": "",
+        "vibe": 3,
+        "vibe_label": "**Water cooler:** \"Hallucination is noise. This paper brought the Bose headphones.\"",
+        "venue": "",
+        "water_cooler": "",
+        "markdown": "**One-liner:** Treat hallucination-linked activations as structured interference, then cancel them with signal processing techniques at inference time.\n**The problem:** LLMs hallucinate. Existing fixes (retrieval, fine-tuning, representation engineering) either need external knowledge, are expensive, or break general capability. Can you surgically suppress just the hallucination signal?\n**The trick:** AAC (Adaptive Activation Cancellation) borrows from classical adaptive noise cancellation in signal processing. Step one: identify \"H-Nodes\" via layer-wise linear probing. Step two: suppress them with a confidence-weighted forward hook during autoregressive generation. No fine-tuning, no extra inference passes, no external knowledge. The key claim: it's the only method that improves factual accuracy while maintaining exactly 0.0% degradation on WikiText-103 perplexity and MMLU across three model scales.\n**Numbers:** Tested on OPT-125M, Phi-3-mini, LLaMA 3-8B. On LLaMA 3-8B: MC1 +0.04, probe selectivity 3.5x-5.94x higher than ITI baseline.\n**The catch:** The improvements are modest in absolute terms. \"Exactly 0.0% degradation\" across three scales is a bold claim that needs independent replication.",
+        "audio": "audio/eval-2026-03-16-4.mp3",
+        "script": "scripts/eval-2026-03-16-4.txt"
+      },
+      {
+        "number": 5,
+        "title": "The Paper That Started the Superposition Era",
+        "headline": "",
+        "link": "",
+        "vibe": 5,
+        "vibe_label": "**Water cooler:** \"One neuron, many hats. This paper told us why and launched a thousand SAEs.\"",
+        "venue": "",
+        "water_cooler": "",
+        "markdown": "**One-liner:** The foundational paper that showed why neurons are polysemantic and launched the entire superposition research program.\n**The problem:** Neurons in neural networks activate for seemingly unrelated concepts (polysemanticity). This makes interpretability brutally hard. Why do networks do this?\n**The trick:** Elhage, Olah, and team at Anthropic built toy models (ReLU autoencoders) where you can fully understand the solution space. They showed models store more features than dimensions by arranging them in superposition, using the geometry of uniform polytopes. There's a phase transition: when features are sparse enough, the model can profitably pack extra features in at the cost of some interference. They connected this to adversarial examples (small perturbations activate spurious features) and laid out why dictionary learning (SAEs) should work for decomposing these representations.\n**Numbers:** Clean phase diagrams showing the sparsity-vs-importance tradeoff. The polytope geometry predictions match empirically.\n**The catch:** Toy models only. But this is exactly the foundation that Paper #1 today extends by adding correlations into the picture.\n\n## Interp Landscape\nSuperposition theory is getting its second wind. The original Anthropic toy models assumed uncorrelated features, and the BOWS paper shows that was leaving constructive interference on the table. Meanwhile, SAEs keep proving their versatility: from script-invariant semantics in multilingual models to causal feature discovery in time series. The field is branching out from \"can we interpret LLMs\" to \"can we interpret any foundation model,\" and the answer so far is yes.",
+        "audio": "audio/eval-2026-03-16-5.mp3",
+        "script": "scripts/eval-2026-03-16-5.txt"
+      }
+    ]
   }
 ]

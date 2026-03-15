@@ -1,0 +1,89 @@
+HOST1: Let me throw a number at you. Twenty-four percent.
+
+HOST2: Twenty-four percent of what?
+
+HOST1: Twenty-four percent performance drop. That's how much worse models actually do on English math problems when you switch from a static benchmark to a functional one. And this is English. The language these models were born in.
+
+HOST2: OK you're going to need to unpack what a functional benchmark even is, because most people think of benchmarks as just a fixed list of questions.
+
+HOST1: Right, and that's exactly the problem this paper exposes. A static benchmark is what you're describing. A fixed dataset of questions and answers. M-GSM has the same math problems every time. Belebele has the same reading comprehension passages. MMLU has the same multiple choice questions. You run your model, get a score, put it on the leaderboard, and call it a day.
+
+HOST2: And functional benchmarks are different how?
+
+HOST1: A functional benchmark uses templates. Instead of a fixed question like "Sally bought two red apples and three green apples, how much fruit did she buy," you have a template where the name, the numbers, the colors are all variables. Each time you run the evaluation, you generate fresh instances from those templates. Fifty variants, a hundred variants. The math is the same structure, but the specific numbers change every time.
+
+HOST2: So you're testing whether the model can actually do the reasoning, not just whether it memorized the answer to this specific problem.
+
+HOST1: Exactly. And this team, led by Victor Ojewale at Brown, did something nobody had done systematically before. They took two existing functional benchmarks, GSM-Symbolic for math and IFEval for instruction following, and they translated the templates into five additional languages. French, Spanish, Hindi, Arabic, and Yoruba.
+
+HOST2: So now you can generate fresh math problems in French, fresh instruction-following tasks in Arabic, and compare those scores against what models get on the static versions.
+
+HOST1: Right. And the gap between static and functional tells you how much of your benchmark score is real and how much might be memorization or pattern matching.
+
+HOST2: And that gap is twenty-four percent in English?
+
+HOST1: For the math benchmarks, yes. Models scored twenty-four percent lower on CL-GSM Symbolic compared to the static M-GSM in English. Seventeen percent lower in French. Eighteen percent in Spanish. These are huge drops. If your model gets an eighty on M-GSM, its real functional performance might be closer to sixty.
+
+HOST2: That's genuinely alarming. But hold on. Is this necessarily memorization? Maybe the functional variants are just harder somehow?
+
+HOST1: That's a fair question. The templates are designed so that the difficulty should be comparable. You're not changing the mathematical structure, just the specific numbers and names. If a model truly understands how to add three-digit numbers, swapping from 247 plus 389 to 518 plus 263 shouldn't matter. But it does. A lot.
+
+HOST2: What about the instruction-following benchmarks?
+
+HOST1: Similar story. They compared Belebele, which is a static reading comprehension benchmark, against CL-IFEval, their functional instruction-following eval. The drops range from fifteen to twenty-four percent depending on the language. Models that look great on Belebele perform significantly worse when you generate fresh instruction-following tasks from templates.
+
+HOST2: But you mentioned M-MMLU. Was that different?
+
+HOST1: This is actually one of the more interesting findings. The gap between M-MMLU and CL-IFEval is tiny. Half a percent to three percent. Which suggests that MMLU, despite all the criticism it gets, is actually a decent proxy for functional performance. The knowledge it tests apparently doesn't benefit as much from memorization as math and reading comprehension do.
+
+HOST2: Huh. So some static benchmarks are actually fine, and others are deeply misleading?
+
+HOST1: Exactly. And you wouldn't know which is which without running the functional comparison. That's the core contribution here. It's not just "benchmarks are broken." It's "here's a systematic way to measure exactly how broken each one is."
+
+HOST2: Let's talk about the language dimension. You said English drops by twenty-four percent on the math benchmark. How do other languages compare?
+
+HOST1: French drops by seventeen percent. Spanish by eighteen. For medium-resource languages like Hindi and Arabic, the drops are similar. But here's where it gets interesting. Arabic and English are actually the most robust across evaluation iterations. They show the least variance when you regenerate the problems. Other languages are much more brittle.
+
+HOST2: What about Yoruba?
+
+HOST1: Yoruba is just consistently bad everywhere. On CL-IFEval, Yoruba performance ranges from twelve to twenty-three percent across models. On CL-GSM Symbolic, it's four to fourteen percent. The static benchmarks already showed weak Yoruba performance, and the functional benchmarks confirm it's not an illusion. The models genuinely can't reason in Yoruba.
+
+HOST2: So the functional benchmarks aren't just lowering scores across the board. They're revealing which languages a model is genuinely capable in and which ones it was faking.
+
+HOST1: Exactly. And they found something really important about model rankings too. The rankings change when you switch from static to functional evaluation. A model that looks good on the static Belebele benchmark in Yoruba might rank poorly on the functional CL-IFEval in Yoruba. And vice versa.
+
+HOST2: Which means leaderboard positions based on static benchmarks could be actively misleading about which model to deploy for a given language.
+
+HOST1: Right. They tested six open-source models. Aya 23-35B, Aya Expanse-32B, Gemma-2-9B-it, Qwen3-8B, Mistral-7B-Instruct, and Mixtral-8x7B-Instruct. On static benchmarks, the performance differences between models are relatively small. But functional benchmarks create a clear two-tier system. Qwen3 and Aya Expanse and Gemma form a top tier that's meaningfully separated from the rest. The static benchmarks hid that gap.
+
+HOST2: So the functional benchmarks are actually better at discriminating between models?
+
+HOST1: Much better. Static benchmarks compress the performance range. Everything looks kinda similar. Functional benchmarks spread it out and show you which models have genuine capability versus which ones are coasting on pattern matching.
+
+HOST2: Let me push back on the methodology though. They translated templates using Google Translate and then had native speakers validate them. How confident are we that the template translations aren't introducing their own confounds?
+
+HOST1: That's a legitimate concern, and they address it partially. They recruited at least two native speaker validators per language, with a structured rubric. Validators checked that the mathematical constraints and instruction-following rules survived translation. They even removed IFEval prompts that don't make sense in certain scripts, like uppercase and lowercase constraints for Arabic and Hindi. That's careful work.
+
+HOST2: But only six languages. No Korean, no Chinese, no Japanese. For a paper about multilingual evaluation, that's a pretty narrow window.
+
+HOST1: True. And Yoruba is an interesting inclusion for showing low-resource dynamics, but the template translation quality in Yoruba is probably the most fragile. They acknowledge this. They also note that fifty variants per template might not be enough to fully stress-test memorization effects.
+
+HOST2: Still, the methodology seems sound even if the coverage is limited. What's the practical takeaway?
+
+HOST1: If you're running a multilingual evaluation pipeline, you should be running functional variants alongside your static benchmarks. Every time. The delta between them tells you how trustworthy your static scores are. If the gap is small, like with MMLU, your static benchmark is probably fine. If the gap is large, like with GSM and Belebele, you're flying blind.
+
+HOST2: And the template approach is pretty straightforward to implement, right? You don't need any special infrastructure. Just parameterized question templates.
+
+HOST1: Right. The beauty of functional evaluation is that once you have the templates, generating thousands of fresh instances is basically free. You get massive evaluation sets that can't be memorized because they're different every time.
+
+HOST2: There's a deeper implication here too. If static benchmarks inflate multilingual scores by up to twenty-four percent, then all those leaderboard comparisons claiming to show multilingual capability are suspect.
+
+HOST1: That's the uncomfortable conclusion. And remember, this paper pairs nicely with the DIBJudge paper we discussed. You've got two layers of distortion. First, your benchmarks are inflated because they're static and memorizable. Second, if you use an LLM judge to evaluate on top of that, the judge has its own bias toward English-like text. Stack those together and your multilingual evaluation could be off by a staggering amount.
+
+HOST2: So what's the state of multilingual evaluation right now, honestly?
+
+HOST1: Pretty broken. But at least now we have tools to measure how broken it is. Functional benchmarks give you the memorization gap. Translationese bias evaluation gives you the judge bias. If you're serious about multilingual AI, you need both.
+
+HOST2: Bottom line: your multilingual benchmark scores are lying to you. Maybe by a little, maybe by a lot. The only way to know is to run functional variants and measure the gap yourself.
+
+HOST1: And if you're not doing that, you're building on a foundation of inflated numbers and hoping nobody notices.

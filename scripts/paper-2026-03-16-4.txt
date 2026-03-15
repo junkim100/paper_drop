@@ -1,0 +1,107 @@
+HOST1: What if I told you that for large enough language models, you could skip post-training entirely? No reinforcement learning, no reward models, no gradients at all. Just randomly wiggle the weights and pick the good ones.
+
+HOST2: I'd say that sounds like something that should obviously not work.
+
+HOST1: And you'd be in good company. There's a famous quote from Schmidhuber, Hochreiter, and Bengio from 2001 saying random guessing cannot be viewed as a reasonable learning algorithm. This paper from MIT CSAIL basically says: actually, it can. If your model is big enough and well-pretrained enough.
+
+HOST2: OK I'm intrigued. Walk me through the setup.
+
+HOST1: So the core idea is a shift in how we think about what pretraining produces. Normally, we think of pretraining as giving us a single point in weight space. A starting position. Then we do post-training, gradient descent, PPO, GRPO, whatever, to move from that starting position to something better.
+
+HOST2: Navigate the loss landscape, find a good minimum.
+
+HOST1: Right. This paper says: what if we stop thinking of the pretrained weights as a point and start thinking of them as defining a neighborhood? And what if that neighborhood is already densely packed with task-specific experts?
+
+HOST2: What do you mean by "densely packed with experts"?
+
+HOST1: They measured something they call solution density. Take your pretrained model, add small random Gaussian noise to all the weights, and check if the perturbed model is better at a specific task than the original. Do this a thousand times. What fraction of perturbations actually improve task performance?
+
+HOST2: And for small models that fraction is tiny.
+
+HOST1: For small models, almost zero. A 500 million parameter model lives on a local maximum. Random perturbations almost always make it worse. You need gradient descent to navigate to a better spot. They call this the "needle in a haystack" regime.
+
+HOST2: But for big models?
+
+HOST1: For big models, the pretrained weights sit in what they call a "thicket." A huge fraction of random perturbations actually improve performance on at least one task. And this density scales monotonically with model size. They tested across the Qwen 2.5 family from 500 million to 32 billion parameters. At 32 billion, a substantial fraction of random perturbations improve performance by five percent or more on reasoning benchmarks.
+
+HOST2: That's a striking result. But here's my question. If random perturbations improve one task, do they improve all tasks? Or are they specialists?
+
+HOST1: Specialists. And this is the second key finding. They measured what they call spectral discordance, which captures how correlated the improvements are across tasks. Low discordance means perturbations are generalists, they help everything equally. High discordance means they're specialists.
+
+HOST2: And discordance goes up with scale?
+
+HOST1: Monotonically. At small scales, the few perturbations that help tend to help similarly across tasks. At large scales, perturbations become increasingly specialized. One random perturbation might dramatically improve math performance while hurting code generation. Another might do the opposite.
+
+HOST2: So around a large pretrained model, you've got this rich ecosystem of specialists, each one good at different things.
+
+HOST1: Exactly. And they visualized this beautifully. They took a hundred random perturbations of a large model, measured performance across seven tasks, and plotted the performance profiles. Each perturbation has this spiky profile, high on some tasks, low on others. When they did PCA on these profiles, distinct clusters emerged. Groups of perturbations with similar specializations.
+
+HOST2: OK so you've got density and diversity. Lots of experts nearby, and they're diverse experts. What's the algorithm that exploits this?
+
+HOST1: They call it RandOpt, and it's embarrassingly simple. Sample N random perturbations of the pretrained weights. Evaluate each one on your task. Pick the top K. At inference time, run all K models and take a majority vote.
+
+HOST2: No gradients. No reward model. No training loop.
+
+HOST1: Zero training steps. The entire thing is O of one in wall-clock training time because all N samples can be evaluated in parallel. Compare that to PPO or GRPO which require T sequential optimization steps.
+
+HOST2: But you're paying K times the inference cost for the ensemble.
+
+HOST1: That's the trade-off. For some tasks, K equals one already works decently. You just find the single best perturbation and use it. For other tasks, you need larger K to be competitive, and the inference cost scales linearly.
+
+HOST2: How does it actually compare to real post-training methods?
+
+HOST1: On the Countdown reasoning task with Olmo 3 seven billion instruct, RandOpt with five thousand random samples and the top K ensemble is competitive with GRPO and evolutionary strategies under the same post-training compute budget. On math benchmarks like GSM8K and Olympiad-level problems, the results are in the same ballpark.
+
+HOST2: "Competitive with" and "in the same ballpark" are doing some work there. Is it actually matching them?
+
+HOST1: Honestly, for current model scales, it's close but usually slightly behind. The authors are upfront about this. They're not claiming RandOpt should replace PPO tomorrow. The point is more that it works at all. The fact that random guessing is even in the conversation with state-of-the-art post-training methods tells you something profound about the geometry of pretrained weight spaces.
+
+HOST2: Let me think about why this happens. If I've pretrained a model on a massive diverse corpus, the weights have encoded knowledge about many different kinds of tasks. So small perturbations are basically mixing these encoded capabilities in slightly different proportions?
+
+HOST1: That's one interpretation. The authors also connect it to recent theoretical work showing that LLM fine-tuning landscapes have low-dimensional curvature. Most of the important directions in weight space, the ones that affect task performance, lie in a low-dimensional subspace. Random perturbations in high-dimensional space have a surprisingly high probability of having non-trivial projections onto that subspace.
+
+HOST2: The blessing of dimensionality.
+
+HOST1: Exactly. In a billion-dimensional space, a random direction is almost guaranteed to have some component along the important subspace. And the larger the model, the more parameters, the more likely a random perturbation intersects with a task-improving direction.
+
+HOST2: They also did a really cool minimal experiment, right? With simple one-dimensional functions?
+
+HOST1: Yes. They stripped everything down to a tiny model trained to predict one-dimensional signals. Trained it on a mixture of sinusoids, linear functions, sawtooth waves, and so on. Then tested whether random perturbations could produce specialists for a specific signal type. They found three regimes. No pretraining: needle in a haystack, random perturbations do nothing useful. Pretraining on diverse signals: thicket regime, random perturbations produce diverse specialists. Pretraining on only the target signal: plateau regime, the model already knows the answer, perturbations can't improve.
+
+HOST2: So the thicket emerges specifically when pretraining is diverse. You need the model to have learned a variety of skills that can be mixed and matched.
+
+HOST1: That's the key insight. Pretraining on diverse data doesn't just learn one good set of weights. It creates a neighborhood where many different configurations are good for different things. The diversity of the training data maps to diversity in the solution landscape.
+
+HOST2: Can you distill the ensemble down to a single model?
+
+HOST1: They show a proof of concept for this. Take the ensemble of K specialists, generate training data from their majority-voted predictions, and distill back into a single model. Early results are promising but they don't claim it fully closes the gap.
+
+HOST2: What about the practical cost of evaluating five thousand random perturbations of a seventy billion parameter model?
+
+HOST1: It's not cheap. Each perturbation means creating a full copy of the model weights and running evaluation. For a seventy billion parameter model, that's a lot of memory and compute. They don't fully address this for the largest scales. But they point out that unlike iterative optimization, all samples are independent, so you can distribute across as many GPUs as you have.
+
+HOST2: Let me play devil's advocate. Couldn't you argue this is just test-time compute scaling by another name? Instead of sampling multiple reasoning chains from one model, you're sampling multiple models and ensembling.
+
+HOST1: That's a fair reframing. But there's an important difference. With test-time scaling on a single model, all your samples come from the same distribution. With RandOpt, each perturbation is a genuinely different model with different strengths. The diversity is at the weight level, not just the output level. And they show the solution diversity increases with model scale in a way that output diversity from a single model doesn't necessarily match.
+
+HOST2: What does this mean philosophically for how we think about pretraining?
+
+HOST1: I think that's the lasting contribution. Pretraining doesn't create a starting point. It creates a neighborhood. A dense, diverse neighborhood of specialists. Post-training methods like PPO and GRPO are efficient ways to find and combine those specialists. But they're not the only way. The specialists are already there. The bigger the model, the denser and more diverse the thicket.
+
+HOST2: And the implication for scaling laws?
+
+HOST1: Tantalizing. If solution density increases with scale, then at some point the neighborhood becomes so dense that even the simplest search algorithms work. We might be approaching a regime where post-training is genuinely optional, at least for some tasks. Though I'd bet that for frontier capabilities, structured optimization will continue to outperform random search.
+
+HOST2: Limitations?
+
+HOST1: The big ones are inference cost of the ensemble, the fact that it's been demonstrated mostly on reasoning tasks with clean evaluation, and the gap between "competitive with" and "better than" gradient-based methods. Also, the theoretical story is incomplete. They observe the thicket phenomenon but don't have a full explanation of why it emerges or exactly when the phase transition happens.
+
+HOST2: Bottom line?
+
+HOST1: This is a paper that changes how you think. Not necessarily how you train models tomorrow, but how you conceptualize what pretraining does. The pretrained weights aren't a point. They're a distribution. And that distribution is full of specialists. File this under "papers that will be cited a lot in five years."
+
+HOST2: The kind of result that's philosophically wild even if the practical algorithm isn't ready for production.
+
+HOST1: Exactly. And honestly, the fact that random guessing is even competitive with PPO should make us all a little humble about how much of our post-training success is the algorithm versus how much is just the quality of what pretraining gave us.
+
+HOST2: A fitting note to end on. Maybe we've been giving gradient descent too much credit.

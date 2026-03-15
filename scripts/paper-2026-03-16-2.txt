@@ -1,0 +1,93 @@
+HOST1: Here's something that might ruin your morning if you've ever published a reasoning model leaderboard. Most of those rankings? Probably noise.
+
+HOST2: Bold claim. What's the evidence?
+
+HOST1: A paper from Case Western Reserve that systematically tested how reliable our model rankings are when we're doing test-time scaling. You know, the thing where you sample multiple outputs from a reasoning model and take the best one, or do majority voting.
+
+HOST2: Pass at k, best of n, that whole family.
+
+HOST1: Right. The problem is, every time you run a reasoning model on a problem, you might get a different answer. The model's stochastic. So when you're comparing two models, you need to account for that randomness. And most leaderboards... don't. Or at least, they don't do it rigorously.
+
+HOST2: So how bad is it? Like, are we talking about minor shuffles in the middle of the pack, or are top models swapping places?
+
+HOST1: At low trial counts, which is what most people actually use, it's bad. They tested twenty reasoning models across four Olympiad-level math benchmarks. AIME 2024, AIME 2025, HMMT 2025, and something called BrUMO 2025. They ran up to eighty trials per model per problem, which is way more than anyone normally does.
+
+HOST2: Eighty trials. That's expensive.
+
+HOST1: Very expensive. But it gives them a reliable ground truth ranking. And then they asked: what happens when you only have one trial, or five trials? How far off are your rankings?
+
+HOST2: And the answer is...
+
+HOST1: At eighty trials, almost every ranking method they tested agreed. They got Kendall's tau b values between 0.93 and 0.95 against their gold standard, and between nineteen and thirty-four methods produced the exact same ordering. The statistics converge. The truth is findable.
+
+HOST2: But nobody runs eighty trials.
+
+HOST1: Nobody runs eighty trials. At one trial, the best methods could only manage a tau b of about 0.86. Which sounds decent until you realize that means models are regularly swapping ranks, especially in the middle of the pack where performance differences are small.
+
+HOST2: OK so this is a real problem. What did they actually build to address it?
+
+HOST1: They built Scorio, which is an open-source library that implements basically every serious statistical ranking method you could think of. Paired comparison models like Bradley-Terry. Item response theory, which is the thing standardized testing uses. Voting rules like Borda count and Condorcet methods. Spectral methods. Bayesian approaches. They threw the kitchen sink at it.
+
+HOST2: Why so many methods? Isn't there just a "right" one?
+
+HOST1: That's actually one of the key insights. Different methods encode different assumptions about what "better" means. Average accuracy says Model A is better if it gets more problems right overall. Bradley-Terry says Model A is better if it tends to beat Model B in head-to-head comparisons on individual problems. And they proved mathematically that these two notions can disagree even with infinite data.
+
+HOST2: Wait, they can disagree at infinity? So it's not just a sample size problem?
+
+HOST1: Not just sample size. They constructed a formal counterexample showing that average accuracy and Bradley-Terry can produce different rankings even as you take the number of trials and problems to infinity. The rankings converge within each method, but they converge to different things.
+
+HOST2: That's actually a pretty deep point. So the choice of ranking method is itself a modeling decision that affects your conclusions.
+
+HOST1: Exactly. And when you have lots of data, it doesn't matter much because most reasonable methods agree. The practical problem is that we're always in the low-data regime. You've got one, maybe five trials per model per problem, because running eighty is prohibitively expensive.
+
+HOST2: So what do you do if you can only afford a few trials?
+
+HOST1: This is where their most interesting practical contribution comes in. They propose using greedy decoding as a Bayesian prior. The idea is simple. Before you do any stochastic sampling, you run each model once with greedy decoding, temperature zero. That gives you a deterministic baseline for each model-problem pair.
+
+HOST2: And then you use that as prior information?
+
+HOST1: Right. They incorporate the greedy results as an empirical prior in a Bayesian framework. At one trial, this reduces ranking variance by sixteen to fifty-two percent depending on the benchmark. That's a huge improvement.
+
+HOST2: But I'm guessing there's a catch, or you wouldn't have said "until it doesn't" earlier.
+
+HOST1: The catch is bias. Greedy decoding and stochastic sampling don't always agree about which model is better. For some models, the greedy answer is consistently right but stochastic sampling often fails. For other models, it's the opposite. When greedy and stochastic behavior are aligned, the prior helps a lot. When they disagree, it can actively mislead you.
+
+HOST2: Can you give me a concrete example?
+
+HOST1: Think about it this way. Some models are really good at finding one correct answer deterministically but bad at exploring the solution space. Other models are mediocre at any single attempt but have high diversity, so with enough samples, majority voting pushes them ahead. The greedy prior will favor the first type and penalize the second type.
+
+HOST2: So the prior bakes in an assumption about what kind of "good" matters.
+
+HOST1: Exactly. And they quantified this. On easier benchmarks like BrUMO, greedy and stochastic rankings are well-aligned, so the prior helps with almost no bias. On harder benchmarks like HMMT, there's real divergence, and the prior introduces meaningful bias.
+
+HOST2: This connects to something I've been thinking about. Reasoning models increasingly use techniques like chain-of-thought and self-consistency where the value is specifically in the diversity of reasoning paths. A greedy prior would structurally undervalue that.
+
+HOST1: Sharp observation. And that's actually a broader theme of the paper. The way you evaluate reasoning models at test time is deeply entangled with what you think "better" means. Do you want the model that gets it right on the first try? Or the model that explores more diverse solutions? Pass at one and pass at k give you very different rankings.
+
+HOST2: What about the item response theory approach? That feels like it should handle difficulty differences well.
+
+HOST1: IRT is interesting because it jointly estimates model ability and problem difficulty. The intuition is that getting a hard problem right tells you more about a model's ability than getting an easy one right. They found IRT methods perform well at high trial counts, but the parameter estimation becomes unstable at low trial counts because you're trying to fit a complex statistical model with limited data.
+
+HOST2: What about the social choice theory methods? The voting stuff?
+
+HOST1: Voting methods are surprisingly robust. Condorcet-style methods, which ask "does Model A beat Model B on more problems than it loses," are quite stable even at low trial counts. The problem is they can produce cycles. Model A beats B, B beats C, C beats A. There are cycle-breaking methods like Schulze and Ranked Pairs, but they add complexity.
+
+HOST2: Let me ask the practical question. I run a leaderboard. What should I do differently after reading this paper?
+
+HOST1: First, report how many trials you ran. If it's fewer than ten, be honest about the uncertainty. Second, use multiple ranking methods and report where they agree and disagree. If the top three spots shuffle depending on the method, that's important information. Third, consider the greedy prior approach for low-budget evaluations, but caveat it clearly.
+
+HOST2: And Scorio makes all of this easy?
+
+HOST1: That's the pitch. It's a single library with a unified API for all these methods. You feed it your response tensor, your matrix of model-by-problem-by-trial binary outcomes, and it gives you rankings under whatever method you want. Plus bootstrap confidence intervals and agreement metrics.
+
+HOST2: One thing I want to flag. This paper focuses on math benchmarks with binary correct-or-wrong outcomes. How well does this extend to tasks with softer evaluation, like code generation or open-ended reasoning?
+
+HOST1: That's a legitimate limitation. The entire framework is built around binary outcomes aggregated over trials. For tasks where evaluation itself is noisy or subjective, you've got an additional layer of uncertainty that isn't captured here. Though the authors point out that many of the ranking methods, especially the pairwise ones, can be adapted to continuous scores.
+
+HOST2: What's the bottom line?
+
+HOST1: If you're ranking reasoning models with fewer than ten trials per problem, your rankings are substantially less reliable than you think. The variance is real, it's quantifiable, and there are better methods than what most people are using. Scorio gives you the tools to do it right. And the greedy prior trick is genuinely useful for cutting variance in half when you're budget-constrained.
+
+HOST2: Essential reading for anyone building or consuming leaderboards. Which is basically everyone in the field.
+
+HOST1: Exactly. Bookmark this one and actually use the library. It's one of those papers that's immediately actionable.

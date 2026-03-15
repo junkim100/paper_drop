@@ -1,0 +1,69 @@
+HOST1: So here's something that should genuinely worry anyone building multilingual AI products. When you use a large language model to judge the quality of text in, say, Korean or Hindi, there's a pretty good chance it's not actually judging quality. It's partly judging how much that text smells like English.
+
+HOST2: Wait. Like, literally preferring text that reads like a translation from English over text that was natively written in that language?
+
+HOST1: Exactly. A team led by Hongbin Zhang just put out a paper called DIBJudge that systematically documents this. They call it translationese bias. When you use something like GPT-4o as a judge for multilingual outputs, it consistently prefers machine-translated text over human-authored text. And the kicker is, the bias gets dramatically worse for low-resource languages.
+
+HOST2: OK, let me make sure I understand the setup. They're not talking about translation quality. They're talking about using an LLM to score, like, "is this a good response to a question in Korean?"
+
+HOST1: Right. Think of the LLM-as-a-judge paradigm. You have a model generate a response in some language, and then you use another LLM to evaluate how good that response is. This is everywhere now. Reward modeling, RLHF training, benchmark evaluation. And what this paper shows is that the judge has a systematic blind spot. It prefers outputs that carry the statistical fingerprints of having been translated from English, even when those outputs are objectively worse.
+
+HOST2: So basically, if you write beautiful, natural Korean, and someone else produces awkward machine-translated Korean that happens to mirror English sentence structure, the LLM judge might actually score the machine translation higher?
+
+HOST1: That's exactly what's happening. And they have a really clever way of measuring it. They built a controlled evaluation protocol using Belebele, which is a multilingual reading comprehension dataset that covers something like 122 languages. For each language, they create pairs: one human-authored response and one that's been back-translated to introduce translationese artifacts. Then they ask the LLM judge to pick which one is better, and they test both orderings to control for position bias.
+
+HOST2: Smart. So they're isolating just the translationese factor.
+
+HOST1: Exactly. And when they plot the results, there's this clear inverse relationship between how well-resourced a language is and how badly the bias hits. High-resource languages like English and French show minimal bias. Medium-resource languages show moderate bias. But low-resource languages? The bias is severe. The judge is basically saying "this machine-translated text is better" most of the time.
+
+HOST2: OK, that's the problem. What's driving it? Like, mechanistically, why does the judge prefer translationese?
+
+HOST1: They identify two root causes. The first is what they call latent manifold alignment with English. Because these models are pre-trained on English-dominated data, the internal representations of all languages get implicitly pulled toward an English-centric space. So when text carries English-like structural patterns, it literally sits closer to the region of the model's internal space that it knows best.
+
+HOST2: So the model has this internal compass that always points toward English.
+
+HOST1: That's a great way to put it. And the second factor is cross-lingual predictability. The judge tends to favor text that's statistically more predictable to it, which means text that follows patterns the model saw during training. Machine-translated text is more predictable because it inherits the statistical regularities of the source language. The model essentially confuses "I can predict this easily" with "this is high quality."
+
+HOST2: Which is kind of the fundamental problem with using probability as a proxy for quality, right?
+
+HOST1: Exactly. And they don't just hypothesize about this. They measure it with two quantitative proxies. One is a Language Alignment Score that measures how geometrically close a representation is to the English part of the model's internal space. The other is something they call cross-lingual predictability, basically how confident the model is in predicting the next token. Both of these reliably predict which response the judge will prefer. They even show ROC curves proving that these spurious factors are genuinely driving the judge's decisions.
+
+HOST2: So that's a really thorough diagnosis. Now what's the fix?
+
+HOST1: This is where DIBJudge comes in. The core idea is an information bottleneck. Think of it like this. The model's internal representation has all this information mixed together: the actual quality signals you care about, and also these spurious translationese signals. DIBJudge forces the model to compress its representation down to only what's needed for making good judgments, while routing the translationese garbage into a completely separate branch.
+
+HOST2: So it's like building two separate pipes. One for the real signal, one for the noise, and making sure nothing leaks between them.
+
+HOST1: That's exactly the architecture. They have a robust branch that gets compressed through a variational information bottleneck, keeping only judgment-critical information. And they have a bias branch that explicitly captures translationese patterns. The key innovation is a cross-covariance penalty that kills statistical dependence between these two branches. So it's not just that the model has two branches. It's that the math actively prevents the bias signals from sneaking back into the judgment.
+
+HOST2: And this actually works? Like, measurably?
+
+HOST1: It works really well. On multilingual reward modeling benchmarks like M-RewardBench and MM-Eval, DIBJudge consistently outperforms strong baselines. But more importantly, on their dedicated translationese bias evaluation suite, it substantially reduces the bias. And the improvements are especially pronounced for low-resource languages, which is exactly where the bias was worst.
+
+HOST2: But there's a catch here, right? You have to fine-tune your judge model. So if you're just calling the GPT-4 API and using it as a judge out of the box, this doesn't help you.
+
+HOST1: Right, that's the main limitation. DIBJudge is a fine-tuning framework. You need to train the bottleneck architecture on top of your base judge model. So it's not a prompt engineering trick you can apply to any API. You need the weights.
+
+HOST2: Which kind of limits who can actually use this in practice.
+
+HOST1: True, but think about who needs this most. It's teams building their own evaluation pipelines for non-English models. Korean AI labs, multilingual product teams, anyone doing reward modeling for RLHF in languages other than English. Those teams typically are working with their own models, and they can absolutely fine-tune their judges.
+
+HOST2: So let me play devil's advocate for a second. Is this really a new problem, or is this just the old "LLMs are English-centric" complaint dressed up in fancier clothes?
+
+HOST1: It's more specific and more insidious than the general English-centricity complaint. Everyone knows models are better in English. That's not news. What's new here is showing that the bias corrupts the evaluation layer. It's not just that models generate worse Korean text. It's that when you try to measure quality in Korean, your measurement tool is broken in a specific, systematic way that makes things look better than they are. You could have a model generating terrible translationese Korean, and your judge would give it high marks precisely because it sounds like translated English.
+
+HOST2: That's a nasty feedback loop. If your reward model prefers translationese, then your RLHF training optimizes for translationese, and then your model produces more translationese, and the reward model keeps rewarding it.
+
+HOST1: Exactly. You get a self-reinforcing cycle that actively degrades the naturalness of your model's non-English outputs while your metrics tell you everything is improving. That's why this matters so much for anyone doing RLHF or reward-model-based training for non-English languages.
+
+HOST2: OK, so what should people actually do with this? Like, if I'm running a multilingual eval pipeline tomorrow morning, what changes?
+
+HOST1: First, stop blindly trusting LLM judges for non-English evaluation. At minimum, include human evaluators for spot-checking, especially for low-resource languages. Second, if you're building your own judge, seriously consider implementing something like DIBJudge's bottleneck architecture. Third, even without fine-tuning, just being aware that your judge might be rewarding English-like patterns should change how you interpret your eval results.
+
+HOST2: And longer term, this feels like it connects to a much bigger question about whether we can ever have truly language-neutral evaluation with models trained on English-dominated data.
+
+HOST1: That's the deep question. The paper argues that as long as pre-training data is English-heavy and fine-tuning data includes lots of translations, these spurious correlations will keep showing up. DIBJudge is the first framework that takes a principled approach to stripping them out. But it's likely the beginning of a much longer research program, not the end of it.
+
+HOST2: Bottom line for practitioners: if you're evaluating non-English models with LLM judges, your scores are probably inflated, and the less resourced the language, the worse the inflation. DIBJudge is the first real fix, but you need to fine-tune to use it.
+
+HOST1: That's exactly right. Your multilingual judge secretly loves English, and now we finally have a way to teach it to stop.

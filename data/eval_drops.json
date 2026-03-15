@@ -129,5 +129,64 @@
         "script": "scripts/eval-2026-03-13-5.txt"
       }
     ]
+  },
+  {
+    "date": "2026-03-16",
+    "intro": "### TL;DR\n- DIBJudge attacks translationese bias in multilingual LLM judges using a variational information bottleneck that forces the judge to separate \"is this good writing?\" from \"does this smell like English?\" Huge implications for anyone evaluating non-English models.\n- CL-IFEval and CL-GSM Symbolic expose 15-24% performance drops when you replace static multilingual benchmarks with functional (template-generated) ones. Your multilingual leaderboard numbers are inflated.\n- A guy topped the HuggingFace Open LLM Leaderboard by duplicating 7 middle layers of Qwen2-72B. No training, no weight changes. Just copy-paste layers. Benchmarks didn't notice.",
+    "footer": "## 🎯 Eval Landscape\n\nThree threads colliding. Multilingual evaluation is broken (DIBJudge + CL-IFEval). Architectural manipulation can top leaderboards without training (RYS-XLarge). And even when we identify real problems, the fixes often just teach models to game the specific benchmark (TruthfulQA). Evaluation is an adversarial game, and the benchmarks are losing.",
+    "papers": [
+      {
+        "number": 1,
+        "title": "Your Multilingual Judge Secretly Loves English",
+        "headline": "",
+        "link": "",
+        "vibe": 4,
+        "vibe_label": "This is directly relevant to anyone building Korean LLM eval pipelines. The translationese bias is real and this is the first serious fix",
+        "venue": "",
+        "water_cooler": "Turns out when GPT-4 judges Korean text, it's partly grading how Korean the Korean sounds. DIBJudge teaches it to stop.",
+        "markdown": "**One-liner:** Fine-tuning framework that forces multilingual LLM judges to stop rewarding text that \"smells like English.\"\n**The problem:** LLM judges systematically prefer machine-translated text over human-authored content in non-English languages. The bias gets worse for low-resource languages. If you're using GPT-4 to judge Korean or Hindi outputs, it's grading \"how English-like is this?\" as much as \"how good is this?\"\n**The trick:** DIBJudge uses a variational information bottleneck to compress the judge's internal representation down to only what matters for judgment quality, while routing translationese signals into a separate bias branch. A cross-covariance penalty explicitly kills statistical dependence between the robust and bias representations. The result: the judge literally cannot see the translationese patterns that were corrupting its scores.\n**Numbers:** Consistently outperforms strong baselines on multilingual reward modeling benchmarks and a dedicated translationese bias evaluation suite. The disentanglement actually works, not just on average but especially on low-resource languages where the bias was worst.\n**The catch:** You need to fine-tune your judge model. If you're just calling GPT-4's API as a judge, this doesn't help you directly.",
+        "audio": "audio/eval-2026-03-16-1.mp3",
+        "script": "scripts/eval-2026-03-16-1.txt"
+      },
+      {
+        "number": 2,
+        "title": "Your Multilingual Benchmark Scores Are Lying",
+        "headline": "",
+        "link": "",
+        "vibe": 4,
+        "vibe_label": "The methodology is what matters here. Every multilingual eval team should be running functional variants alongside static benchmarks",
+        "venue": "",
+        "water_cooler": "Static benchmarks overstate multilingual performance by up to 24%. Sleep well, leaderboard enthusiasts.",
+        "markdown": "**One-liner:** Template-based multilingual benchmarks reveal 15-24% performance drops that static benchmarks miss entirely.\n**The problem:** Multilingual benchmarks like M-MMLU, M-GSM, and Belebele give you nice numbers, but they're static. Models might be memorizing patterns rather than genuinely reasoning in those languages. Nobody was checking if the scores hold up when you generate fresh instances from templates.\n**The trick:** They translated existing functional benchmark templates (GSM-Symbolic for math, IFEval for instruction-following) into French, Spanish, Hindi, Arabic, and Yoruba. Each GSM-Symbolic template spawns 50 variants per language, giving 5,000 QA pairs per language. Then they compared static benchmark scores against functional benchmark scores for the same models. The gap is the \"how much of your score is memorization?\" meter.\n**Numbers:** 24% performance drop between M-GSM and CL-GSM Symbolic in English. 17% in French. 18% in Spanish. 15-24% drops between Belebele and CL-IFEval across languages. But M-MMLU to CL-IFEval only shows 0.5-3% drops, suggesting M-MMLU is actually a decent proxy. Arabic and English are the most robust; other languages are fragile.\n**The catch:** Only 6 languages. No Korean, Chinese, or Japanese. The template translation quality itself could be a confound, especially for Yoruba. And 50 variants per template might not be enough to fully stress-test memorization.",
+        "audio": "audio/eval-2026-03-16-2.mp3",
+        "script": "scripts/eval-2026-03-16-2.txt"
+      },
+      {
+        "number": 3,
+        "title": "Copy-Paste Your Way to #1 on the Leaderboard",
+        "headline": "",
+        "link": "",
+        "vibe": 5,
+        "vibe_label": "The most important eval piece of the month. If you can top a leaderboard by copy-pasting layers, the leaderboard is measuring the wrong thing",
+        "venue": "",
+        "water_cooler": "Someone ctrl+C ctrl+V'd 7 layers and beat every model on the leaderboard. We're so cooked.",
+        "markdown": "**One-liner:** Duplicated 7 middle layers of Qwen2-72B, changed zero weights, topped the HuggingFace Open LLM Leaderboard.\n**The problem:** The HuggingFace Open LLM Leaderboard (v2) was the definitive ranking for open-weight models in 2024. Thousands of models competing on IFEval, BBH, MATH Lvl 5, GPQA, MuSR, and MMLU-PRO. The assumption: you need training, RLHF, or clever merging to climb the rankings.\n**The trick:** David Noel Ng built a \"brain scanner\" for transformers. He swept all possible layer-duplication configurations (i,j) on Qwen2-72B, using fast proxy tasks to find the sweet spot. Duplicating layers 35-41 (the middle \"reasoning cortex\") improved benchmark scores across all six tasks. The hypothesis: early layers decode input, late layers encode output, middle layers do abstract reasoning. Giving the model more reasoning passes is free performance. The model (dnhkng/RYS-XLarge) hit #1.\n**Numbers:** #1 on the Open LLM Leaderboard across six benchmarks. No gradient descent. No weight modification. Just architectural surgery that gave the model extra thinking passes through its reasoning layers.\n**The catch:** This is a devastating indictment of benchmark robustness, not a legitimate model improvement technique. The model doesn't generalize better; it just games the specific evaluation format.",
+        "audio": "audio/eval-2026-03-16-3.mp3",
+        "script": "scripts/eval-2026-03-16-3.txt"
+      },
+      {
+        "number": 4,
+        "title": "The Benchmark That Tests Whether Your Model Is a Liar",
+        "headline": "",
+        "link": "",
+        "vibe": 4,
+        "vibe_label": "for the insight. 🔥🔥 for current utility",
+        "venue": "",
+        "water_cooler": "TruthfulQA proved that making models bigger made them better at lying. Then RLHF taught them to stop. Now nobody knows if they're actually truthful or just trained to say 'I'm not sure.'",
+        "markdown": "**One-liner:** 817 questions designed to catch LLMs repeating popular misconceptions. Bigger models were initially less truthful, not more.\n**The problem (in 2021):** Everyone assumed scaling would fix everything, including accuracy. But LLMs learn from human text, and humans write false things. Nobody had a benchmark specifically designed to test this failure mode.\n**The trick:** 817 questions across 38 categories where common human misconceptions exist. The questions are adversarial by design: a model that blindly imitates human text will get them wrong. They also introduced a fine-tuned \"GPT-judge\" to automate scoring, one of the early LLM-as-judge implementations.\n**Numbers:** GPT-3 scored 58% truthful (human baseline: 94%). The inverse scaling finding was the bombshell: larger models were less truthful because they had more capacity to memorize popular misconceptions. Modern RLHF'd models have mostly fixed this.\n**The catch:** TruthfulQA is now partially gamed. RLHF training explicitly optimizes for \"don't say false things,\" so modern models score well without necessarily being more truthful in novel domains. Classic Goodhart's Law.",
+        "audio": "audio/eval-2026-03-16-4.mp3",
+        "script": "scripts/eval-2026-03-16-4.txt"
+      }
+    ]
   }
 ]
